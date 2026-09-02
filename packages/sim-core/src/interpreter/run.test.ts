@@ -18,12 +18,34 @@ import { createRun, evaluate, runToCompletion, step, TICK_MS, type RunState } fr
 const jumpPlanner: MotionPlanner = {
   planJoint: (_from, target) => planned({ joints: [...target], ticks: 10, waypoints: [[...target]] }),
   planLinear: () => planned({ joints: [0, 0, 0, 0, 0, 0], ticks: 10, waypoints: [[0, 0, 0, 0, 0, 0]] }),
+  // Схват едет по оси X ровно на величину первого сустава: этого хватает, чтобы
+  // подвести губки к детали и проверить логику захвата без модели робота.
+  flangePoint: (joints, offset) => ({
+    x: (joints[0] ?? 0) + offset.x,
+    y: offset.y,
+    z: offset.z,
+  }),
+  offsetFromFlange: (joints, point) => ({
+    x: point.x - (joints[0] ?? 0),
+    y: point.y,
+    z: point.z,
+  }),
+};
+
+/** Подводит схват к кубику: тот лежит на 0.3 по X. */
+const overCube: Statement = {
+  op: 'moveJ',
+  joints: [0.3, 0, 0, 0, 0, 0],
+  speed: 1,
+  acc: 1,
 };
 
 /** Планировщик, который всегда отказывает: так проверяется недостижимая точка. */
 const refusingPlanner: MotionPlanner = {
   planJoint: () => refuse(),
   planLinear: () => refuse(),
+  flangePoint: (_joints, offset) => offset,
+  offsetFromFlange: (_joints, point) => point,
 };
 
 function refuse(): MotionResult {
@@ -295,14 +317,60 @@ describe('выходы и захват', () => {
     expect(digitalOutput(result.world, 'cabinet', 1)).toBe(false);
   });
 
+  it('берёт деталь, когда губки до неё дотягиваются', () => {
+    const result = run(program(overCube, { op: 'gripper', action: 'close' }));
+
+    expect(result.world.grasped).toBe('cube-1');
+    expect(result.log.some((event) => event.kind === 'grasp')).toBe(true);
+  });
+
+  it('не берёт деталь, до которой не дотянуться, и говорит об этом', () => {
+    // Схват остался над началом координат, а кубик лежит на 0.3 по X.
+    const result = run(program({ op: 'gripper', action: 'close' }));
+
+    expect(result.world.grasped).toBeNull();
+    expect(result.world.gripperOpen).toBe(false);
+    expect(result.log).toContainEqual({ kind: 'graspMissed', tick: 0 });
+  });
+
   it('берёт и отпускает деталь', () => {
     const result = run(
-      program({ op: 'gripper', action: 'close' }, { op: 'gripper', action: 'open' }),
+      program(overCube, { op: 'gripper', action: 'close' }, { op: 'gripper', action: 'open' }),
     );
 
     expect(result.world.grasped).toBeNull();
-    expect(result.log).toContainEqual({ kind: 'grasp', tick: 0, objectId: 'cube-1' });
-    expect(result.log).toContainEqual({ kind: 'release', tick: 0, objectId: 'cube-1' });
+    expect(result.log.some((event) => event.kind === 'grasp')).toBe(true);
+    expect(result.log.some((event) => event.kind === 'release')).toBe(true);
+  });
+
+  it('зажатая деталь едет вместе с рукой', () => {
+    const result = run(
+      program(overCube, { op: 'gripper', action: 'close' }, {
+        op: 'moveJ',
+        joints: [0.8, 0, 0, 0, 0, 0],
+        speed: 1,
+        acc: 1,
+      }),
+    );
+
+    expect(result.world.grasped).toBe('cube-1');
+    // Схват уехал с 0.3 на 0.8, деталь обязана уехать на те же 0.5.
+    expect(result.world.objects['cube-1']?.position.x).toBeCloseTo(cube.position.x + 0.5, 9);
+  });
+
+  it('отпущенная деталь остаётся там, где её оставили', () => {
+    const result = run(
+      program(
+        overCube,
+        { op: 'gripper', action: 'close' },
+        { op: 'moveJ', joints: [0.8, 0, 0, 0, 0, 0], speed: 1, acc: 1 },
+        { op: 'gripper', action: 'open' },
+        { op: 'moveJ', joints: [0, 0, 0, 0, 0, 0], speed: 1, acc: 1 },
+      ),
+    );
+
+    expect(result.world.grasped).toBeNull();
+    expect(result.world.objects['cube-1']?.position.x).toBeCloseTo(cube.position.x + 0.5, 9);
   });
 
   it('открыть пустой схват не ошибка и события не даёт', () => {
@@ -310,6 +378,14 @@ describe('выходы и захват', () => {
 
     expect(result.status).toBe('finished');
     expect(result.log.some((event) => event.kind === 'release')).toBe(false);
+  });
+
+  it('досягаемость губок настраивается', () => {
+    // С нулевой досягаемостью нужно попасть точно внутрь детали.
+    const state = createRun(program(overCube, { op: 'gripper', action: 'close' }), world());
+    const result = runToCompletion(state, jumpPlanner, { graspReach: 0 });
+
+    expect(result.world.grasped).toBe('cube-1');
   });
 });
 

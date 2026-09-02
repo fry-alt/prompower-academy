@@ -27,6 +27,8 @@ const zoneB: Zone = {
   size: { x: 0.15, y: 0.02, z: 0.15 },
 };
 
+const ZERO = { x: 0, y: 0, z: 0 };
+
 function world() {
   return createWorld({ joints: [0, 0, 0, 0, 0, 0], objects: [cube], zones: [zoneB] });
 }
@@ -101,13 +103,13 @@ describe('время', () => {
 
 describe('захват', () => {
   it('берёт объект и закрывает схват', () => {
-    const state = graspObject(world(), 'cube-1');
+    const state = graspObject(world(), 'cube-1', ZERO);
     expect(state.grasped).toBe('cube-1');
     expect(state.gripperOpen).toBe(false);
   });
 
   it('отпускает и открывает схват', () => {
-    const state = releaseObject(graspObject(world(), 'cube-1'));
+    const state = releaseObject(graspObject(world(), 'cube-1', ZERO));
     expect(state.grasped).toBeNull();
     expect(state.gripperOpen).toBe(true);
   });
@@ -117,7 +119,7 @@ describe('захват', () => {
   });
 
   it('отвергает захват несуществующего объекта', () => {
-    expect(() => graspObject(world(), 'cube-9')).toThrow(/нет на сцене/);
+    expect(() => graspObject(world(), 'cube-9', ZERO)).toThrow(/нет на сцене/);
   });
 });
 

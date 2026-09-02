@@ -1,8 +1,16 @@
-import { flangePose, type KinematicChain } from '../kinematics/chain';
+import { flangePose, forwardKinematics, type KinematicChain } from '../kinematics/chain';
 import { solveIk, type IkOptions } from '../kinematics/ik';
-import { fromPose, poseOf, translationOf, type Matrix4 } from '../kinematics/transform';
+import {
+  fromPose,
+  invert,
+  poseOf,
+  transformPoint,
+  translationOf,
+  type Matrix4,
+} from '../kinematics/transform';
 import { isWithinLimits } from '../kinematics/joint-limits';
 import type { MotionParams, Pose } from '../program/ast';
+import type { Vec3 } from '../world/state';
 import { TICK_MS } from './run';
 import { planned, refused, type MotionPlanner, type MotionResult } from './motion';
 
@@ -59,6 +67,12 @@ export function createPlanner(chain: KinematicChain, options: PlannerOptions = {
     },
     planLinear(from, target, params) {
       return planLinearMotion(chain, settings, from, target, params);
+    },
+    flangePoint(joints, offset) {
+      return transformPoint(forwardKinematics(chain, joints), offset);
+    },
+    offsetFromFlange(joints, point) {
+      return transformPoint(invert(forwardKinematics(chain, joints)), point);
     },
   };
 }

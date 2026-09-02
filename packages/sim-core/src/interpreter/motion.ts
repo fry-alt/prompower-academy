@@ -1,4 +1,5 @@
 import type { MotionParams, Pose } from '../program/ast';
+import type { Vec3 } from '../world/state';
 
 /**
  * Граница между интерпретатором и кинематикой.
@@ -43,6 +44,17 @@ export interface MotionPlanner {
    * за предел сустава — отказ, робот при этом не двигается.
    */
   planLinear(from: readonly number[], target: Pose, params: MotionParams): MotionResult;
+
+  /**
+   * Куда попадёт точка, закреплённая на фланце со смещением `offset`.
+   *
+   * Через это интерпретатор узнаёт, где сейчас схват и куда уезжает зажатая
+   * деталь. Матрицы наружу не выходят: снаружи только точки в системе сцены.
+   */
+  flangePoint(joints: readonly number[], offset: Vec3): Vec3;
+
+  /** Обратное: смещение точки сцены в системе фланца. Нужно в момент захвата. */
+  offsetFromFlange(joints: readonly number[], point: Vec3): Vec3;
 }
 
 export function planned(plan: MotionPlan): MotionResult {

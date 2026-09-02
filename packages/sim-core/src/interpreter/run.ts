@@ -4,14 +4,17 @@ import {
   advanceTick,
   digitalInput,
   graspObject,
+  moveObject,
   releaseObject,
   setDigitalOutput,
   setJoints,
   setVariable,
   type EventLog,
   type SimEvent,
+  type Vec3,
   type WorldState,
 } from '../world/state';
+import { nearestGraspable } from '../world/grasp';
 import type { MotionPlanner, MotionResult } from './motion';
 
 /**
@@ -71,7 +74,21 @@ export interface RunState {
 
 export interface RunOptions {
   readonly maxSteps?: number;
+  /**
+   * На каком расстоянии от схвата деталь считается зажатой, метры.
+   *
+   * Это характеристика инструмента. Модели захвата у нас пока нет, поэтому
+   * значение задаётся здесь; когда придёт настоящий гриппер, оно переедет в его
+   * конфиг вместе с геометрией губок.
+   */
+  readonly graspReach?: number;
 }
+
+/** Половина типичного хода губок кобота. */
+const DEFAULT_GRASP_REACH = 0.05;
+
+/** Центр фланца в его собственной системе координат. */
+const ORIGIN: Vec3 = { x: 0, y: 0, z: 0 };
 
 export function createRun(program: Program, world: WorldState): RunState {
   return withCurrent({
@@ -108,7 +125,7 @@ export function step(state: RunState, planner: MotionPlanner, options: RunOption
   const statement = currentStatement(unwound);
   if (statement === null) return finish(unwound);
 
-  const executed = execute(unwound, statement, planner);
+  const executed = execute(unwound, statement, planner, options);
   return withCurrent({ ...executed, steps: executed.steps + 1 });
 }
 
@@ -127,7 +144,12 @@ export function runToCompletion(
 
 // --- исполнение отдельных инструкций ---
 
-function execute(state: RunState, statement: Statement, planner: MotionPlanner): RunState {
+function execute(
+  state: RunState,
+  statement: Statement,
+  planner: MotionPlanner,
+  options: RunOptions,
+): RunState {
   switch (statement.op) {
     case 'comment':
       return next(logStatement(state, statement));
@@ -167,7 +189,9 @@ function execute(state: RunState, statement: Statement, planner: MotionPlanner):
     }
 
     case 'gripper':
-      return next(executeGripper(state, statement));
+      return next(
+        executeGripper(state, statement, planner, options.graspReach ?? DEFAULT_GRASP_REACH),
+      );
 
     case 'waitDI':
       return executeWaitDigitalInput(state, statement);
@@ -199,6 +223,7 @@ function execute(state: RunState, statement: Statement, planner: MotionPlanner):
         state,
         statement,
         planner.planJoint(state.world.joints, statement.joints, statement),
+        planner,
       );
 
     case 'moveL':
@@ -206,11 +231,23 @@ function execute(state: RunState, statement: Statement, planner: MotionPlanner):
         state,
         statement,
         planner.planLinear(state.world.joints, statement.pose, statement),
+        planner,
       );
   }
 }
 
-function executeGripper(state: RunState, statement: Statement & { op: 'gripper' }): RunState {
+/**
+ * Закрытие схвата берёт деталь, до которой губки действительно дотягиваются.
+ *
+ * Положение схвата приходит из прямой кинематики через границу `MotionPlanner`:
+ * интерпретатор по-прежнему не знает ни про URDF, ни про матрицы.
+ */
+function executeGripper(
+  state: RunState,
+  statement: Statement & { op: 'gripper' },
+  planner: MotionPlanner,
+  reach: number,
+): RunState {
   const logged = logStatement(state, statement);
 
   if (statement.action === 'open') {
@@ -221,13 +258,27 @@ function executeGripper(state: RunState, statement: Statement & { op: 'gripper' 
       : { ...append(logged, { kind: 'release', tick: world.tick, objectId: held }), world };
   }
 
-  const target = objectAtGripper(state.world);
+  const tcp = planner.flangePoint(state.world.joints, ORIGIN);
+  const target = nearestGraspable(state.world.objects, tcp, reach);
+
   if (target === null) {
     // Закрыть схват в пустоте не ошибка: так делают перед подходом к детали.
-    return { ...logged, world: { ...state.world, gripperOpen: false } };
+    // Но событие пишем — по нему автопроверка объяснит, почему деталь осталась
+    // на месте, вместо бесполезного «задание не выполнено».
+    return {
+      ...append(logged, { kind: 'graspMissed', tick: state.world.tick }),
+      world: { ...state.world, gripperOpen: false },
+    };
   }
 
-  const world = graspObject(state.world, target);
+  const object = state.world.objects[target];
+  if (object === undefined) return fail(logged, `Объекта «${target}» нет на сцене`);
+
+  const world = graspObject(
+    state.world,
+    target,
+    planner.offsetFromFlange(state.world.joints, object.position),
+  );
   return {
     ...append(logged, { kind: 'grasp', tick: world.tick, objectId: target }),
     world,
@@ -269,14 +320,31 @@ function executeWaitDigitalInput(
   return { ...state, world, waitingSince };
 }
 
-function executeMotion(state: RunState, statement: Statement, result: MotionResult): RunState {
+function executeMotion(
+  state: RunState,
+  statement: Statement,
+  result: MotionResult,
+  planner: MotionPlanner,
+): RunState {
   const logged = logStatement(state, statement);
 
   if (!result.ok) return fail(logged, result.refusal.reason);
 
   const { plan } = result;
-  const world = setJoints(advanceTick(state.world, plan.ticks), plan.joints);
-  return next({ ...logged, world, lastMotion: plan.waypoints });
+  const moved = setJoints(advanceTick(state.world, plan.ticks), plan.joints);
+  return next({ ...logged, world: carryGraspedObject(moved, planner), lastMotion: plan.waypoints });
+}
+
+/**
+ * Зажатая деталь едет вместе с фланцем.
+ *
+ * Без этого рука уносила бы кубик только на картинке, а в состоянии мира он
+ * оставался бы лежать на столе — и автопроверка честно сообщала бы, что задание
+ * не выполнено, хотя ученик всё сделал правильно.
+ */
+function carryGraspedObject(world: WorldState, planner: MotionPlanner): WorldState {
+  if (world.grasped === null || world.graspOffset === null) return world;
+  return moveObject(world, world.grasped, planner.flangePoint(world.joints, world.graspOffset));
 }
 
 // --- стек кадров ---
@@ -455,14 +523,3 @@ function withCurrent(state: RunState): RunState {
   return { ...unwound, current: currentStatement(unwound) };
 }
 
-/**
- * Какой объект окажется в захвате при закрытии схвата.
- *
- * Настоящая проверка появится вместе с кинематикой: объект должен попасть между
- * губок. Пока берётся ближайший к фланцу — этого хватает, чтобы отладить логику
- * программы, и это место помечено как временное.
- */
-function objectAtGripper(world: WorldState): string | null {
-  const ids = Object.keys(world.objects);
-  return ids[0] ?? null;
-}

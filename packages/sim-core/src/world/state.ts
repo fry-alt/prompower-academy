@@ -44,6 +44,11 @@ export interface WorldState {
   readonly zones: Readonly<Record<string, Zone>>;
   /** Идентификатор объекта в захвате либо `null`. */
   readonly grasped: string | null;
+  /**
+   * Где зажатая деталь сидит относительно фланца. Благодаря этому она едет
+   * вместе с рукой и не прыгает в центр схвата в момент захвата.
+   */
+  readonly graspOffset: Vec3 | null;
   readonly gripperOpen: boolean;
   /** Каналы шкафа управления и инструмента. Нумерация внутри банка идёт с единицы. */
   readonly io: Readonly<Record<IoBank, IoBankState>>;
@@ -58,6 +63,8 @@ export interface IoBankState {
 export type SimEvent =
   | { readonly kind: 'statement'; readonly tick: number; readonly op: StatementOp }
   | { readonly kind: 'grasp'; readonly tick: number; readonly objectId: string }
+  /** Схват сомкнулся, но детали между губок не было. Нужен автопроверке урока. */
+  | { readonly kind: 'graspMissed'; readonly tick: number }
   | { readonly kind: 'release'; readonly tick: number; readonly objectId: string }
   | {
       readonly kind: 'output';
@@ -93,6 +100,7 @@ export function createWorld(init: WorldInit): WorldState {
     objects: byId(init.objects ?? []),
     zones: byId(init.zones ?? []),
     grasped: null,
+    graspOffset: null,
     gripperOpen: true,
     io: {
       cabinet: bankState(init.io?.cabinet ?? DEFAULT_IO_LAYOUT.cabinet),
@@ -153,15 +161,20 @@ export function moveObject(world: WorldState, id: string, position: Vec3): World
   return { ...world, objects: { ...world.objects, [id]: { ...object, position } } };
 }
 
-/** Берёт объект в захват. Схват при этом закрывается. */
-export function graspObject(world: WorldState, id: string): WorldState {
+/**
+ * Берёт объект в захват. Схват при этом закрывается.
+ *
+ * `offset` — положение детали в системе фланца на момент захвата. По нему деталь
+ * потом едет вместе с рукой.
+ */
+export function graspObject(world: WorldState, id: string, offset: Vec3): WorldState {
   if (world.objects[id] === undefined) throw new RangeError(`Объекта «${id}» нет на сцене`);
-  return { ...world, grasped: id, gripperOpen: false };
+  return { ...world, grasped: id, graspOffset: offset, gripperOpen: false };
 }
 
 /** Отпускает то, что в захвате. Открыть пустой схват — не ошибка. */
 export function releaseObject(world: WorldState): WorldState {
-  return { ...world, grasped: null, gripperOpen: true };
+  return { ...world, grasped: null, graspOffset: null, gripperOpen: true };
 }
 
 function byId<T extends { readonly id: string }>(items: readonly T[]): Record<string, T> {

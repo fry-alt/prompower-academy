@@ -32,6 +32,8 @@ export { solveIk, type IkOptions, type IkResult } from './kinematics/ik';
 
 export { createPlanner, type PlannerOptions } from './interpreter/planner';
 
+export { distanceToObject, nearestGraspable } from './world/grasp';
+
 export {
   fromAxisAngle,
   fromOrigin,
