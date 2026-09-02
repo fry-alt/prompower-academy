@@ -6,7 +6,14 @@
  * нельзя надёжно восстановить блоки, а из блоков текст — можно.
  */
 
-/** Поза фланца: метры и углы Эйлера в радианах, как их задают на планшете. */
+import type { IoBank } from '../io';
+
+/**
+ * Поза фланца в единицах СИ: метры и радианы.
+ *
+ * На планшете то же самое показано в миллиметрах и градусах — перевод делается
+ * на границе отображения, внутри ядра единицы совпадают с URDF.
+ */
 export interface Pose {
   readonly x: number;
   readonly y: number;
@@ -37,7 +44,12 @@ export type Condition =
       readonly left: Expression;
       readonly right: Expression;
     }
-  | { readonly kind: 'digitalInput'; readonly index: number; readonly value: boolean }
+  | {
+      readonly kind: 'digitalInput';
+      readonly bank: IoBank;
+      readonly index: number;
+      readonly value: boolean;
+    }
   | { readonly kind: 'not'; readonly operand: Condition }
   | { readonly kind: 'and'; readonly left: Condition; readonly right: Condition }
   | { readonly kind: 'or'; readonly left: Condition; readonly right: Condition };
@@ -72,9 +84,15 @@ type MoveL = { readonly op: 'moveL'; readonly pose: Pose } & MotionParams;
 type Command =
   | MoveJ
   | MoveL
-  | { readonly op: 'setDO'; readonly index: number; readonly value: boolean }
+  | {
+      readonly op: 'setDO';
+      readonly bank: IoBank;
+      readonly index: number;
+      readonly value: boolean;
+    }
   | {
       readonly op: 'waitDI';
+      readonly bank: IoBank;
       readonly index: number;
       readonly value: boolean;
       readonly timeoutMs?: number;

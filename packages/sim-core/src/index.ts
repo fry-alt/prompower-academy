@@ -17,6 +17,14 @@ export {
 } from './robot/plugin';
 
 export {
+  DEFAULT_IO_LAYOUT,
+  IO_BANKS,
+  ioBankLabel,
+  isIoBank,
+  type IoBank,
+} from './io';
+
+export {
   PROGRAM_VERSION,
   type BinaryOperator,
   type CompareOperator,
@@ -36,6 +44,8 @@ export { parseProgram, ProgramParseError } from './program/parse';
 export {
   advanceTick,
   createWorld,
+  digitalInput,
+  digitalOutput,
   graspObject,
   moveObject,
   releaseObject,
@@ -44,6 +54,7 @@ export {
   setJoints,
   setVariable,
   type EventLog,
+  type IoBankState,
   type SceneObject,
   type SimEvent,
   type Vec3,

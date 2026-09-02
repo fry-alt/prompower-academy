@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceTick,
   createWorld,
+  digitalInput,
+  digitalOutput,
   graspObject,
   moveObject,
   releaseObject,
@@ -42,10 +44,21 @@ describe('createWorld', () => {
     expect(world().zones['zone-b']).toEqual(zoneB);
   });
 
-  it('заводит входы и выходы выключенными', () => {
-    const state = createWorld({ joints: [], digitalInputCount: 3, digitalOutputCount: 2 });
-    expect(state.digitalInputs).toEqual([false, false, false]);
-    expect(state.digitalOutputs).toEqual([false, false]);
+  it('заводит каналы обоих банков выключенными', () => {
+    const state = world();
+    // Числа по умолчанию взяты с экрана ввода-вывода планшета JAKA.
+    expect(state.io.cabinet.inputs).toHaveLength(10);
+    expect(state.io.cabinet.outputs).toHaveLength(8);
+    expect(state.io.tool.inputs).toHaveLength(2);
+    expect(state.io.tool.outputs).toHaveLength(2);
+    expect(state.io.cabinet.outputs.every((value) => value === false)).toBe(true);
+  });
+
+  it('позволяет задать своё число каналов', () => {
+    const state = createWorld({ joints: [], io: { tool: { inputs: 1, outputs: 1 } } });
+    expect(state.io.tool.inputs).toHaveLength(1);
+    // Банк, который не переопределяли, остаётся по умолчанию.
+    expect(state.io.cabinet.outputs).toHaveLength(8);
   });
 
   it('отвергает повторяющийся идентификатор', () => {
@@ -62,12 +75,12 @@ describe('неизменяемость', () => {
     expect(after.variables).toEqual({ 'счётчик': 1 });
   });
 
-  it('не делит массив выходов между состояниями', () => {
+  it('не делит каналы между состояниями', () => {
     const before = world();
-    const after = setDigitalOutput(before, 0, true);
+    const after = setDigitalOutput(before, 'cabinet', 1, true);
 
-    expect(before.digitalOutputs[0]).toBe(false);
-    expect(after.digitalOutputs[0]).toBe(true);
+    expect(digitalOutput(before, 'cabinet', 1)).toBe(false);
+    expect(digitalOutput(after, 'cabinet', 1)).toBe(true);
   });
 
   it('не делит объекты между состояниями', () => {
@@ -109,13 +122,29 @@ describe('захват', () => {
 });
 
 describe('входы и выходы', () => {
-  it('переключает канал по номеру', () => {
-    expect(setDigitalInput(world(), 2, true).digitalInputs[2]).toBe(true);
+  it('нумерует каналы с единицы, как на планшете', () => {
+    const state = setDigitalInput(world(), 'cabinet', 1, true);
+    expect(digitalInput(state, 'cabinet', 1)).toBe(true);
+    expect(digitalInput(state, 'cabinet', 2)).toBe(false);
   });
 
-  it('отвергает несуществующий канал', () => {
-    expect(() => setDigitalOutput(world(), 99, true)).toThrow(/выход 99 не существует/);
-    expect(() => setDigitalInput(world(), -1, true)).toThrow(/вход -1 не существует/);
+  it('держит банки шкафа и инструмента раздельно', () => {
+    const state = setDigitalOutput(world(), 'tool', 1, true);
+    expect(digitalOutput(state, 'tool', 1)).toBe(true);
+    expect(digitalOutput(state, 'cabinet', 1)).toBe(false);
+  });
+
+  it('отвергает несуществующий канал с указанием банка', () => {
+    expect(() => setDigitalOutput(world(), 'tool', 5, true)).toThrow(
+      /Выхода 5 у инструмента нет: каналов всего 2/,
+    );
+    expect(() => setDigitalInput(world(), 'cabinet', 0, true)).toThrow(
+      /Входа 0 у шкафа управления нет/,
+    );
+  });
+
+  it('сообщает про несуществующий канал при чтении', () => {
+    expect(digitalInput(world(), 'tool', 9)).toBeNull();
   });
 });
 

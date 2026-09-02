@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Program, Statement } from '../program/ast';
-import { createWorld, setDigitalInput, type SceneObject, type WorldState } from '../world/state';
+import {
+  createWorld,
+  digitalOutput,
+  setDigitalInput,
+  type SceneObject,
+  type WorldState,
+} from '../world/state';
 import { planned, refused, type MotionPlanner, type MotionResult } from './motion';
 import { createRun, evaluate, runToCompletion, step, TICK_MS, type RunState } from './run';
 
@@ -31,7 +37,7 @@ const cube: SceneObject = {
 };
 
 function world(): WorldState {
-  return createWorld({ joints: [0, 0, 0, 0, 0, 0], objects: [cube], digitalInputCount: 4 });
+  return createWorld({ joints: [0, 0, 0, 0, 0, 0], objects: [cube] });
 }
 
 function program(...body: Statement[]): Program {
@@ -171,7 +177,7 @@ describe('циклы', () => {
     const result = run(
       program({
         op: 'while',
-        cond: { kind: 'digitalInput', index: 0, value: false },
+        cond: { kind: 'digitalInput', bank: 'cabinet', index: 1, value: false },
         body: [],
       }),
     );
@@ -183,7 +189,7 @@ describe('циклы', () => {
   it('обрывает бесконечный цикл понятной ошибкой', () => {
     const p = program({
       op: 'while',
-      cond: { kind: 'digitalInput', index: 0, value: false },
+      cond: { kind: 'digitalInput', bank: 'cabinet', index: 1, value: false },
       body: [{ op: 'comment', text: 'вечно' }],
     });
 
@@ -199,11 +205,11 @@ describe('ветвления', () => {
     run(
       program({
         op: 'if',
-        cond: { kind: 'digitalInput', index: 0, value: true },
+        cond: { kind: 'digitalInput', bank: 'cabinet', index: 1, value: true },
         then: [{ op: 'comment', text: 'да' }],
         else: [{ op: 'comment', text: 'нет' }],
       }),
-      setDigitalInput(world(), 0, input),
+      setDigitalInput(world(), 'cabinet', 1, input),
     );
 
   it('идёт в then, когда условие истинно', () => {
@@ -219,7 +225,7 @@ describe('ветвления', () => {
       program(
         {
           op: 'if',
-          cond: { kind: 'digitalInput', index: 0, value: true },
+          cond: { kind: 'digitalInput', bank: 'cabinet', index: 1, value: true },
           then: [{ op: 'comment', text: 'да' }],
         },
         { op: 'comment', text: 'после' },
@@ -269,10 +275,24 @@ describe('переменные', () => {
 
 describe('выходы и захват', () => {
   it('переключает цифровой выход и пишет событие', () => {
-    const result = run(program({ op: 'setDO', index: 2, value: true }));
+    const result = run(program({ op: 'setDO', bank: 'cabinet', index: 3, value: true }));
 
-    expect(result.world.digitalOutputs[2]).toBe(true);
-    expect(result.log).toContainEqual({ kind: 'output', tick: 0, index: 2, value: true });
+    expect(digitalOutput(result.world, 'cabinet', 3)).toBe(true);
+    expect(result.log).toContainEqual({
+      kind: 'output',
+      tick: 0,
+      bank: 'cabinet',
+      index: 3,
+      value: true,
+    });
+  });
+
+  it('различает банк шкафа и банк инструмента', () => {
+    // Захват на реальной ячейке висит на выходе инструмента, а не шкафа.
+    const result = run(program({ op: 'setDO', bank: 'tool', index: 1, value: true }));
+
+    expect(digitalOutput(result.world, 'tool', 1)).toBe(true);
+    expect(digitalOutput(result.world, 'cabinet', 1)).toBe(false);
   });
 
   it('берёт и отпускает деталь', () => {
@@ -296,21 +316,21 @@ describe('выходы и захват', () => {
 describe('ожидание входа', () => {
   it('идёт дальше, когда сигнал уже есть', () => {
     const result = run(
-      program({ op: 'waitDI', index: 1, value: true }),
-      setDigitalInput(world(), 1, true),
+      program({ op: 'waitDI', bank: 'cabinet', index: 2, value: true }),
+      setDigitalInput(world(), 'cabinet', 2, true),
     );
     expect(result.status).toBe('finished');
   });
 
   it('обрывается по таймауту с объяснением', () => {
-    const result = run(program({ op: 'waitDI', index: 1, value: true, timeoutMs: 100 }));
+    const result = run(program({ op: 'waitDI', bank: 'cabinet', index: 2, value: true, timeoutMs: 100 }));
 
     expect(result.status).toBe('failed');
     expect(result.error).toMatch(/так и не появился за 100 мс/);
   });
 
   it('ждёт по тику за шаг, а не мгновенно', () => {
-    const state = createRun(program({ op: 'waitDI', index: 1, value: true }), world());
+    const state = createRun(program({ op: 'waitDI', bank: 'cabinet', index: 2, value: true }), world());
 
     const afterOne = step(state, jumpPlanner);
     expect(afterOne.status).toBe('running');
@@ -318,8 +338,8 @@ describe('ожидание входа', () => {
   });
 
   it('сообщает о несуществующем входе', () => {
-    const result = run(program({ op: 'waitDI', index: 99, value: true }));
-    expect(result.error).toMatch(/входа 99 у робота нет/);
+    const result = run(program({ op: 'waitDI', bank: 'tool', index: 99, value: true }));
+    expect(result.error).toMatch(/входа 99 у инструмента нет/);
   });
 });
 

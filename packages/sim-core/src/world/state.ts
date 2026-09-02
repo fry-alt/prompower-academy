@@ -10,6 +10,7 @@
  * бит в бит (§6 брифа), а `Date.now()` это ломает.
  */
 
+import { DEFAULT_IO_LAYOUT, ioBankLabel, type IoBank } from '../io';
 import type { StatementOp } from '../program/ast';
 
 export interface Vec3 {
@@ -44,9 +45,14 @@ export interface WorldState {
   /** Идентификатор объекта в захвате либо `null`. */
   readonly grasped: string | null;
   readonly gripperOpen: boolean;
-  readonly digitalInputs: readonly boolean[];
-  readonly digitalOutputs: readonly boolean[];
+  /** Каналы шкафа управления и инструмента. Нумерация внутри банка идёт с единицы. */
+  readonly io: Readonly<Record<IoBank, IoBankState>>;
   readonly variables: Readonly<Record<string, number>>;
+}
+
+export interface IoBankState {
+  readonly inputs: readonly boolean[];
+  readonly outputs: readonly boolean[];
 }
 
 export type SimEvent =
@@ -56,6 +62,7 @@ export type SimEvent =
   | {
       readonly kind: 'output';
       readonly tick: number;
+      readonly bank: IoBank;
       readonly index: number;
       readonly value: boolean;
     }
@@ -75,11 +82,9 @@ export interface WorldInit {
   readonly joints: readonly number[];
   readonly objects?: readonly SceneObject[];
   readonly zones?: readonly Zone[];
-  readonly digitalInputCount?: number;
-  readonly digitalOutputCount?: number;
+  /** Число каналов по банкам. По умолчанию как на планшете JAKA. */
+  readonly io?: Partial<Record<IoBank, { readonly inputs: number; readonly outputs: number }>>;
 }
-
-const DEFAULT_IO_COUNT = 8;
 
 export function createWorld(init: WorldInit): WorldState {
   return {
@@ -89,10 +94,25 @@ export function createWorld(init: WorldInit): WorldState {
     zones: byId(init.zones ?? []),
     grasped: null,
     gripperOpen: true,
-    digitalInputs: falses(init.digitalInputCount ?? DEFAULT_IO_COUNT),
-    digitalOutputs: falses(init.digitalOutputCount ?? DEFAULT_IO_COUNT),
+    io: {
+      cabinet: bankState(init.io?.cabinet ?? DEFAULT_IO_LAYOUT.cabinet),
+      tool: bankState(init.io?.tool ?? DEFAULT_IO_LAYOUT.tool),
+    },
     variables: {},
   };
+}
+
+function bankState(layout: { readonly inputs: number; readonly outputs: number }): IoBankState {
+  return { inputs: falses(layout.inputs), outputs: falses(layout.outputs) };
+}
+
+/** Состояние канала. `null` — такого канала у робота нет. */
+export function digitalInput(world: WorldState, bank: IoBank, channel: number): boolean | null {
+  return world.io[bank].inputs[channel - 1] ?? null;
+}
+
+export function digitalOutput(world: WorldState, bank: IoBank, channel: number): boolean | null {
+  return world.io[bank].outputs[channel - 1] ?? null;
 }
 
 export function advanceTick(world: WorldState, ticks = 1): WorldState {
@@ -103,12 +123,24 @@ export function setJoints(world: WorldState, joints: readonly number[]): WorldSt
   return { ...world, joints: [...joints] };
 }
 
-export function setDigitalOutput(world: WorldState, index: number, value: boolean): WorldState {
-  return { ...world, digitalOutputs: replaceAt(world.digitalOutputs, index, value, 'выход') };
+export function setDigitalOutput(
+  world: WorldState,
+  bank: IoBank,
+  channel: number,
+  value: boolean,
+): WorldState {
+  const outputs = replaceChannel(world.io[bank].outputs, bank, channel, value, 'Выхода');
+  return { ...world, io: { ...world.io, [bank]: { ...world.io[bank], outputs } } };
 }
 
-export function setDigitalInput(world: WorldState, index: number, value: boolean): WorldState {
-  return { ...world, digitalInputs: replaceAt(world.digitalInputs, index, value, 'вход') };
+export function setDigitalInput(
+  world: WorldState,
+  bank: IoBank,
+  channel: number,
+  value: boolean,
+): WorldState {
+  const inputs = replaceChannel(world.io[bank].inputs, bank, channel, value, 'Входа');
+  return { ...world, io: { ...world.io, [bank]: { ...world.io[bank], inputs } } };
 }
 
 export function setVariable(world: WorldState, name: string, value: number): WorldState {
@@ -148,16 +180,19 @@ function falses(count: number): boolean[] {
   return Array.from({ length: count }, () => false);
 }
 
-function replaceAt(
+function replaceChannel(
   values: readonly boolean[],
-  index: number,
+  bank: IoBank,
+  channel: number,
   value: boolean,
   what: string,
 ): boolean[] {
-  if (!Number.isInteger(index) || index < 0 || index >= values.length) {
-    throw new RangeError(`Цифровой ${what} ${index} не существует: их всего ${values.length}`);
+  if (!Number.isInteger(channel) || channel < 1 || channel > values.length) {
+    throw new RangeError(
+      `${what} ${channel} у ${ioBankLabel(bank)} нет: каналов всего ${values.length}`,
+    );
   }
   const next = [...values];
-  next[index] = value;
+  next[channel - 1] = value;
   return next;
 }

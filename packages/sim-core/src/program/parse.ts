@@ -1,3 +1,4 @@
+import { isIoBank, type IoBank } from '../io';
 import {
   PROGRAM_VERSION,
   type BinaryOperator,
@@ -81,7 +82,8 @@ function parseCommand(record: Record<string, unknown>, path: string): Statement 
     case 'setDO':
       return {
         op,
-        index: asIndex(record['index'], `${path}.index`),
+        bank: asIoBank(record['bank'], `${path}.bank`),
+        index: asChannel(record['index'], `${path}.index`),
         value: asBoolean(record['value'], `${path}.value`),
       };
 
@@ -89,7 +91,8 @@ function parseCommand(record: Record<string, unknown>, path: string): Statement 
       const timeoutMs = record['timeoutMs'];
       const base = {
         op,
-        index: asIndex(record['index'], `${path}.index`),
+        bank: asIoBank(record['bank'], `${path}.bank`),
+        index: asChannel(record['index'], `${path}.index`),
         value: asBoolean(record['value'], `${path}.value`),
       } as const;
       // Поле необязательное: ожидание без таймаута — законный случай.
@@ -203,7 +206,8 @@ function parseCondition(input: unknown, path: string): Condition {
     case 'digitalInput':
       return {
         kind,
-        index: asIndex(record['index'], `${path}.index`),
+        bank: asIoBank(record['bank'], `${path}.bank`),
+        index: asChannel(record['index'], `${path}.index`),
         value: asBoolean(record['value'], `${path}.value`),
       };
     case 'not':
@@ -256,6 +260,23 @@ function asFraction(value: unknown, path: string): number {
   const number = asNumber(value, path);
   if (number <= 0 || number > 1) {
     throw new ProgramParseError(path, `ожидалась доля от 0 до 1, получено ${number}`);
+  }
+  return number;
+}
+
+function asIoBank(value: unknown, path: string): IoBank {
+  const bank = asString(value, path);
+  if (!isIoBank(bank)) {
+    throw new ProgramParseError(path, `ожидалось cabinet или tool, получено «${bank}»`);
+  }
+  return bank;
+}
+
+/** Каналы ввода-вывода нумеруются с единицы — так же, как на планшете. */
+function asChannel(value: unknown, path: string): number {
+  const number = asNumber(value, path);
+  if (!Number.isInteger(number) || number < 1) {
+    throw new ProgramParseError(path, `номер канала начинается с 1, получено ${number}`);
   }
   return number;
 }

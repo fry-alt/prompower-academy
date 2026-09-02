@@ -65,29 +65,41 @@ describe('движения', () => {
 });
 
 describe('входы и выходы', () => {
-  it('разбирает setDO', () => {
-    const statement = { op: 'setDO', index: 3, value: true };
+  it('разбирает setDO с банком', () => {
+    const statement = { op: 'setDO', bank: 'tool', index: 1, value: true };
     expect(parseProgram(program([statement])).body[0]).toEqual(statement);
   });
 
-  it('отвергает дробный номер выхода', () => {
-    expect(() => parseProgram(program([{ op: 'setDO', index: 1.5, value: true }]))).toThrow(
-      /целое неотрицательное/,
+  it('требует указать банк', () => {
+    expect(() => parseProgram(program([{ op: 'setDO', index: 1, value: true }]))).toThrow(
+      /ожидалась строка/,
     );
+    const wrong = { op: 'setDO', bank: 'cupboard', index: 1, value: true };
+    expect(() => parseProgram(program([wrong]))).toThrow(/ожидалось cabinet или tool/);
+  });
+
+  it('нумерует каналы с единицы, как на планшете', () => {
+    const zero = { op: 'setDO', bank: 'cabinet', index: 0, value: true };
+    expect(() => parseProgram(program([zero]))).toThrow(/номер канала начинается с 1/);
+  });
+
+  it('отвергает дробный номер выхода', () => {
+    const fraction = { op: 'setDO', bank: 'cabinet', index: 1.5, value: true };
+    expect(() => parseProgram(program([fraction]))).toThrow(/номер канала начинается с 1/);
   });
 
   it('разрешает waitDI без таймаута', () => {
-    const statement = { op: 'waitDI', index: 0, value: true };
+    const statement = { op: 'waitDI', bank: 'cabinet', index: 1, value: true };
     expect(parseProgram(program([statement])).body[0]).toEqual(statement);
   });
 
   it('разбирает waitDI с таймаутом', () => {
-    const statement = { op: 'waitDI', index: 0, value: true, timeoutMs: 5000 };
+    const statement = { op: 'waitDI', bank: 'cabinet', index: 1, value: true, timeoutMs: 5000 };
     expect(parseProgram(program([statement])).body[0]).toEqual(statement);
   });
 
   it('отвергает отрицательный таймаут', () => {
-    const statement = { op: 'waitDI', index: 0, value: true, timeoutMs: -1 };
+    const statement = { op: 'waitDI', bank: 'cabinet', index: 1, value: true, timeoutMs: -1 };
     expect(() => parseProgram(program([statement]))).toThrow(/неотрицательное/);
   });
 });
@@ -104,7 +116,7 @@ describe('управляющие конструкции', () => {
   it('разрешает if без ветки else', () => {
     const statement = {
       op: 'if',
-      cond: { kind: 'digitalInput', index: 0, value: true },
+      cond: { kind: 'digitalInput', bank: 'cabinet', index: 1, value: true },
       then: [{ op: 'wait', ms: 100 }],
     };
     expect(parseProgram(program([statement])).body[0]).toEqual(statement);
@@ -113,7 +125,7 @@ describe('управляющие конструкции', () => {
   it('разбирает составное условие', () => {
     const cond = {
       kind: 'and',
-      left: { kind: 'digitalInput', index: 0, value: true },
+      left: { kind: 'digitalInput', bank: 'tool', index: 1, value: true },
       right: {
         kind: 'not',
         operand: {

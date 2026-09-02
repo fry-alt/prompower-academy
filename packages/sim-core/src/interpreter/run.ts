@@ -1,6 +1,8 @@
 import type { Condition, Expression, Program, Statement } from '../program/ast';
+import { ioBankLabel } from '../io';
 import {
   advanceTick,
+  digitalInput,
   graspObject,
   releaseObject,
   setDigitalOutput,
@@ -148,10 +150,16 @@ function execute(state: RunState, statement: Statement, planner: MotionPlanner):
     }
 
     case 'setDO': {
-      const world = setDigitalOutput(state.world, statement.index, statement.value);
+      const world = setDigitalOutput(
+        state.world,
+        statement.bank,
+        statement.index,
+        statement.value,
+      );
       const logged = append(logStatement(state, statement), {
         kind: 'output',
         tick: world.tick,
+        bank: statement.bank,
         index: statement.index,
         value: statement.value,
       });
@@ -230,9 +238,12 @@ function executeWaitDigitalInput(
   state: RunState,
   statement: Statement & { op: 'waitDI' },
 ): RunState {
-  const input = state.world.digitalInputs[statement.index];
-  if (input === undefined) {
-    return fail(state, `Цифрового входа ${statement.index} у робота нет.`);
+  const input = digitalInput(state.world, statement.bank, statement.index);
+  if (input === null) {
+    return fail(
+      state,
+      `Цифрового входа ${statement.index} у ${ioBankLabel(statement.bank)} нет.`,
+    );
   }
 
   if (input === statement.value) {
@@ -248,7 +259,8 @@ function executeWaitDigitalInput(
     if (elapsedMs >= statement.timeoutMs) {
       return fail(
         { ...state, world, waitingSince: null },
-        `Сигнал на входе ${statement.index} так и не появился за ${statement.timeoutMs} мс. ` +
+        `Сигнал на входе ${statement.index} ${ioBankLabel(statement.bank)} ` +
+          `так и не появился за ${statement.timeoutMs} мс. ` +
           'Проверьте номер входа и то, что его кто-то включает.',
       );
     }
@@ -376,7 +388,7 @@ export function evaluate(
 export function evaluateCondition(condition: Condition, world: WorldState): boolean {
   switch (condition.kind) {
     case 'digitalInput':
-      return (world.digitalInputs[condition.index] ?? false) === condition.value;
+      return (digitalInput(world, condition.bank, condition.index) ?? false) === condition.value;
 
     case 'not':
       return !evaluateCondition(condition.operand, world);
