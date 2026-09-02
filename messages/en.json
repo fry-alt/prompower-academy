@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "PROMPOWER Academy",
+    "tagline": "Cobot training platform"
+  },
+  "sandbox": {
+    "title": "Simulator sandbox",
+    "description": "A cobot model in the browser. Drag the sliders to move the joints — the robot follows and stays within its limits.",
+    "loading": "Loading the robot model",
+    "placeholderNotice": "A training stand-in, not a PROMPOWER model. Its geometry and joint limits are arbitrary and will be replaced once the real URDF arrives.",
+    "resetPose": "Home pose",
+    "zeroPose": "Zero all joints",
+    "jointsHeading": "Joints",
+    "atLowerLimit": "Lower limit",
+    "atUpperLimit": "Upper limit",
+    "degreesUnit": "°",
+    "metresUnit": " m",
+    "loadFailedTitle": "The robot model could not be loaded",
+    "loadFailedHint": "Check that the URDF is reachable at {url} and that the joint names in the plugin match the URDF.",
+    "webglMissing": "The browser could not create a WebGL context. Enable hardware acceleration or open the page in another browser."
+  },
+  "robots": {
+    "placeholder6Dof": {
+      "name": "Training manipulator, 6 axes"
+    },
+    "joints": {
+      "base": "Base",
+      "shoulder": "Shoulder",
+      "elbow": "Elbow",
+      "wrist1": "Wrist 1",
+      "wrist2": "Wrist 2",
+      "wrist3": "Wrist 3"
+    }
+  }
+}

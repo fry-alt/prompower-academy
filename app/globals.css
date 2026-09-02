@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/*
+  Палитра-заглушка. Акцент и нейтральная шкала будут заменены значениями из
+  брендбука PROMPOWER — все цвета интерфейса ходят только через эти токены,
+  поэтому замена сведётся к правке этого блока.
+
+  Шрифт системный: сборка идёт без доступа к Google Fonts, а гарнитуры бренда
+  ещё не получены.
+*/
+@theme {
+  --color-surface-0: oklch(0.16 0.006 250);
+  --color-surface-1: oklch(0.20 0.006 250);
+  --color-surface-2: oklch(0.25 0.007 250);
+  --color-line: oklch(0.32 0.008 250);
+  --color-ink: oklch(0.94 0.003 250);
+  --color-ink-dim: oklch(0.72 0.008 250);
+  --color-ink-faint: oklch(0.56 0.008 250);
+  --color-brand: oklch(0.72 0.17 55);
+  --color-brand-ink: oklch(0.18 0.03 55);
+  --color-warn: oklch(0.78 0.14 85);
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "SF Mono", ui-monospace, "Consolas", monospace;
+
+  --radius-panel: 0.375rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-surface-0);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
