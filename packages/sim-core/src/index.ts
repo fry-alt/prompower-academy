@@ -30,6 +30,8 @@ export { parseUrdfChain, UrdfParseError } from './kinematics/urdf';
 
 export { solveIk, type IkOptions, type IkResult } from './kinematics/ik';
 
+export { createPlanner, type PlannerOptions } from './interpreter/planner';
+
 export {
   fromAxisAngle,
   fromOrigin,

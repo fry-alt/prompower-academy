@@ -20,6 +20,12 @@ import {
 export interface ChainJoint {
   readonly name: string;
   readonly limit: JointLimit;
+  /**
+   * Паспортная скорость сустава из `<limit velocity>` в URDF: рад/с у
+   * поворотных, м/с у линейных. У моделей серии Zu она разная и по моделям, и
+   * по осям, поэтому в коде её быть не должно.
+   */
+  readonly maxSpeed: number;
   /** Преобразование от предыдущего подвижного сустава к системе этого. */
   readonly origin: Matrix4;
   /** Ось вращения или перемещения в системе сустава. */

@@ -34,7 +34,14 @@ interface RawJoint {
   readonly origin: Matrix4;
   readonly axis: Vec3;
   readonly limit: { readonly lower: number; readonly upper: number };
+  readonly velocity: number;
 }
+
+/**
+ * Скорость сустава, когда URDF её не объявляет. Половина оборота в секунду —
+ * заведомо не быстрее любого кобота, так что урок не станет опаснее, чем есть.
+ */
+const DEFAULT_JOINT_VELOCITY = Math.PI;
 
 /**
  * Собирает цепь по именам подвижных суставов из конфига плагина.
@@ -122,6 +129,7 @@ function buildChain(
     joints.push({
       name: raw.name,
       limit: toJointLimit(raw),
+      maxSpeed: raw.velocity,
       origin: multiply(pending, raw.origin),
       axis: raw.axis,
     });
@@ -219,6 +227,10 @@ function readJoint(element: XmlElement): RawJoint {
       lower: number(limit?.attributes['lower'], 0, name, 'lower'),
       upper: number(limit?.attributes['upper'], 0, name, 'upper'),
     },
+    velocity: positive(
+      number(limit?.attributes['velocity'], DEFAULT_JOINT_VELOCITY, name, 'velocity'),
+      name,
+    ),
   };
 }
 
@@ -239,6 +251,13 @@ function triple(raw: string | undefined, fallback: Vec3, jointName: string, what
     throw new UrdfParseError(`Сустав «${jointName}»: ${what}="${raw}" — ожидались три числа`);
   }
   return { x: parts[0]!, y: parts[1]!, z: parts[2]! };
+}
+
+function positive(value: number, jointName: string): number {
+  if (value <= 0) {
+    throw new UrdfParseError(`Сустав «${jointName}»: velocity должна быть больше нуля`);
+  }
+  return value;
 }
 
 function number(raw: string | undefined, fallback: number, jointName: string, what: string): number {
