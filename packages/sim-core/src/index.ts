@@ -17,6 +17,36 @@ export {
 } from './robot/plugin';
 
 export {
+  EMPTY_CHAIN,
+  flangePose,
+  forwardKinematics,
+  jointFrames,
+  jointLimits,
+  type ChainJoint,
+  type KinematicChain,
+} from './kinematics/chain';
+
+export { parseUrdfChain, UrdfParseError } from './kinematics/urdf';
+
+export { solveIk, type IkOptions, type IkResult } from './kinematics/ik';
+
+export {
+  fromAxisAngle,
+  fromOrigin,
+  fromPose,
+  fromRpy,
+  fromTranslation,
+  IDENTITY,
+  invert,
+  multiply,
+  poseOf,
+  rpyOf,
+  transformPoint,
+  translationOf,
+  type Matrix4,
+} from './kinematics/transform';
+
+export {
   DEFAULT_IO_LAYOUT,
   IO_BANKS,
   ioBankLabel,
