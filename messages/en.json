@@ -56,5 +56,49 @@
       "wrist2": "Wrist 2",
       "wrist3": "Wrist 3"
     }
+  },
+  "lesson": {
+    "title": "Tool and gripper",
+    "description": "Pick up a part and move it to another zone of the table.",
+    "loading": "Preparing the task…",
+    "loadFailed": "The model failed to load: {reason}",
+    "goals": "What to do",
+    "program": "Program",
+    "passed": "Task complete.",
+    "failed": "Task not complete:",
+    "goal": {
+      "objectInZone": "Move “{object}” into “{zone}”",
+      "gripperState": "Leave the gripper {state}"
+    },
+    "gripper": {
+      "open": "open",
+      "closed": "closed"
+    },
+    "controls": {
+      "play": "Run",
+      "pause": "Pause",
+      "step": "Step",
+      "reset": "Reset",
+      "speed": "Speed"
+    },
+    "op": {
+      "moveJ": "Joint move",
+      "moveL": "Linear move, mm",
+      "gripperOpen": "Open gripper",
+      "gripperClose": "Close gripper",
+      "wait": "Wait",
+      "setDO": "Output",
+      "waitDI": "Wait for input",
+      "repeat": "Repeat times:",
+      "while": "While condition holds",
+      "if": "If condition holds"
+    },
+    "bank": {
+      "cabinet": "cabinet",
+      "tool": "tool"
+    },
+    "unit": {
+      "seconds": "s"
+    }
   }
 }

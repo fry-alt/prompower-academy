@@ -28,6 +28,8 @@ interface RobotViewerProps {
   /** Габариты загруженной модели: от них считается кадр камеры. */
   bounds: RobotBounds;
   onFpsSample: (fps: number) => void;
+  /** Содержимое сцены помимо робота и стола: детали, зоны, разметка задания. */
+  children?: React.ReactNode;
 }
 
 export function RobotViewer({
@@ -37,6 +39,7 @@ export function RobotViewer({
   scene,
   bounds,
   onFpsSample,
+  children,
 }: RobotViewerProps) {
   useEffect(() => {
     jointNames.forEach((name, index) => {
@@ -72,6 +75,8 @@ export function RobotViewer({
       />
 
       <primitive object={robot} />
+
+      {children}
 
       <WorkTable size={scene.tableSize} height={scene.tableHeight} />
 

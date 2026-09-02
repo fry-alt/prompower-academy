@@ -37,3 +37,31 @@ export function measureRobot(root: Object3D): RobotBounds {
     centerY: center.y + Math.max(0, -box.min.y),
   };
 }
+
+/**
+ * Расширяет рамку так, чтобы в кадр попала вся рабочая область задания.
+ *
+ * По одному роботу кадр строить нельзя: деталь и зоны лежат в стороне от него, и
+ * ученик их просто не увидит. Точки сцены приходят в системе URDF, где вверх —
+ * ось Z, поэтому здесь же делается тот самый разворот в оси three.js.
+ */
+export function includeScene(
+  bounds: RobotBounds,
+  points: readonly { readonly position: Vec3Like; readonly size: Vec3Like }[],
+): RobotBounds {
+  let radius = bounds.radius;
+
+  for (const item of points) {
+    const distance = Math.hypot(item.position.x, item.position.z, item.position.y);
+    const half = Math.hypot(item.size.x, item.size.z, item.size.y) / 2;
+    radius = Math.max(radius, distance + half);
+  }
+
+  return { ...bounds, radius };
+}
+
+interface Vec3Like {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}

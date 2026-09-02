@@ -19,6 +19,8 @@
   --color-brand: oklch(0.72 0.17 55);
   --color-brand-ink: oklch(0.18 0.03 55);
   --color-warn: oklch(0.78 0.14 85);
+  /* Успех: приглушённый зелёный, чтобы не спорить за внимание с 3D-сценой. */
+  --color-ok: oklch(0.76 0.13 155);
 
   --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Cascadia Mono", "SF Mono", ui-monospace, "Consolas", monospace;
