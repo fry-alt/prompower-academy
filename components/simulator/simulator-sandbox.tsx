@@ -56,6 +56,7 @@ export function SimulatorSandbox({ plugin }: { plugin: RobotPlugin }) {
         jointNames={jointNames}
         values={clamped}
         scene={plugin.scene}
+        bounds={load.bounds}
         onFpsSample={setFps}
       />
     );
@@ -68,13 +69,13 @@ export function SimulatorSandbox({ plugin }: { plugin: RobotPlugin }) {
         <p className="text-sm text-ink-dim">{tKey(plugin.displayNameKey)}</p>
       </header>
 
-      {plugin.isPlaceholder && (
+      {plugin.placeholderNoticeKey !== null && (
         <p
           role="status"
           data-testid="placeholder-notice"
           className="border-b border-line bg-surface-1 px-5 py-2 text-sm text-warn"
         >
-          {t('placeholderNotice')}
+          {tKey(plugin.placeholderNoticeKey)}
         </p>
       )}
 

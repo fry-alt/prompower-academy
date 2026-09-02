@@ -4,7 +4,7 @@ import { assertRobotPluginConsistent, RobotPluginError, type RobotPlugin } from 
 const base: RobotPlugin = {
   id: 'test-robot',
   displayNameKey: 'robots.test.name',
-  isPlaceholder: true,
+  placeholderNoticeKey: 'robots.test.notice',
   urdfUrl: '/models/test/test.urdf',
   packages: {},
   joints: [
@@ -13,7 +13,7 @@ const base: RobotPlugin = {
   ],
   homePose: [0, 0.5],
   palette: { base: '#fff', joint: '#000', accent: '#f00' },
-  scene: { tableHeight: 0.75, tableSize: [1, 1], cameraDistance: 2 },
+  scene: { tableHeight: 0.75, tableSize: [1, 1], cameraZoom: 2 },
 };
 
 describe('assertRobotPluginConsistent', () => {

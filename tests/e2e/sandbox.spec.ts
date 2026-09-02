@@ -8,8 +8,10 @@ import { expect, test } from '@playwright/test';
  */
 
 const SANDBOX = '/ru/sandbox';
-/** joint_2 в URDF заглушки ограничен ±1.9199 рад, это ровно 110.0° после округления. */
-const SHOULDER_UPPER_DEG = '110.0°';
+/** joint_2 в URDF модели JAKA ограничен ±2.094 рад — 119.977°, на экране 120.0°. */
+const SHOULDER_UPPER_DEG = '120.0°';
+/** Домашняя поза плеча из конфига плагина: -0.6 рад. */
+const SHOULDER_HOME_DEG = '-34.4°';
 
 test.beforeEach(async ({ page }) => {
   await page.goto(SANDBOX);
@@ -17,7 +19,7 @@ test.beforeEach(async ({ page }) => {
 
 test('сцена загружается и честно называет себя заглушкой', async ({ page }) => {
   await expect(page.locator('canvas')).toBeVisible();
-  await expect(page.getByTestId('placeholder-notice')).toContainText('не модель PROMPOWER');
+  await expect(page.getByTestId('placeholder-notice')).toContainText('не кобот PROMPOWER');
   await expect(page.getByTestId('load-failure')).toHaveCount(0);
 });
 
@@ -44,11 +46,12 @@ test('сустав упирается в предел из URDF', async ({ page 
   const slider = page.locator('[data-joint="joint_2"]');
   const readout = page.locator('[data-joint-value="joint_2"]');
 
-  // Границы ползунка приходят из <limit> в URDF, а не из кода приложения.
-  await expect(slider).toHaveAttribute('max', '110');
-  await expect(slider).toHaveAttribute('min', '-110');
+  // Границы ползунка приходят из <limit> в URDF, а не из кода приложения:
+  // joint_2 ограничен ±2.094 рад, это ±119.977°.
+  const max = Number(await slider.getAttribute('max'));
+  expect(max).toBeCloseTo(119.977, 2);
 
-  await slider.fill('110');
+  await slider.press('End');
   await expect(readout).toHaveText(SHOULDER_UPPER_DEG);
   await expect(page.getByText('Верхний предел')).toBeVisible();
 
@@ -64,5 +67,5 @@ test('кнопки позы возвращают робота в известн�
   await expect(shoulder).toHaveText('0.0°');
 
   await page.getByRole('button', { name: 'Домашняя поза' }).click();
-  await expect(shoulder).toHaveText('28.6°');
+  await expect(shoulder).toHaveText(SHOULDER_HOME_DEG);
 });

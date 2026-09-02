@@ -7,7 +7,6 @@
     "title": "Simulator sandbox",
     "description": "A cobot model in the browser. Drag the sliders to move the joints — the robot follows and stays within its limits.",
     "loading": "Loading the robot model",
-    "placeholderNotice": "A training stand-in, not a PROMPOWER model. Its geometry and joint limits are arbitrary and will be replaced once the real URDF arrives.",
     "resetPose": "Home pose",
     "zeroPose": "Zero all joints",
     "jointsHeading": "Joints",
@@ -21,7 +20,12 @@
   },
   "robots": {
     "placeholder6Dof": {
-      "name": "Training manipulator, 6 axes"
+      "name": "Training manipulator, 6 axes",
+      "notice": "A training stand-in, not a PROMPOWER model. Its geometry and joint limits are invented and will be replaced once the real URDF arrives."
+    },
+    "jaka6Dof": {
+      "name": "JAKA cobot, 6 axes",
+      "notice": "A temporary JAKA model from a public repository, not a PROMPOWER cobot. The geometry and joint limits are real but belong to a different robot; the file will be replaced once the customer supplies the URDF."
     },
     "joints": {
       "base": "Base",

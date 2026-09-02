@@ -10,7 +10,7 @@ import type { RobotPlugin } from '@prompower/sim-core';
 export const placeholder6Dof: RobotPlugin = {
   id: 'placeholder-6dof',
   displayNameKey: 'robots.placeholder6Dof.name',
-  isPlaceholder: true,
+  placeholderNoticeKey: 'robots.placeholder6Dof.notice',
   urdfUrl: '/models/placeholder-6dof/placeholder-6dof.urdf',
   packages: {},
   joints: [
@@ -30,7 +30,7 @@ export const placeholder6Dof: RobotPlugin = {
   scene: {
     tableHeight: 0.75,
     tableSize: [1.4, 1.0],
-    cameraDistance: 2.2,
+    cameraZoom: 1.45,
   },
 };
 

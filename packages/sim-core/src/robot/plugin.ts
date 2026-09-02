@@ -27,12 +27,15 @@ export interface RobotPalette {
 }
 
 export interface SceneDefaults {
-  /** Высота столешницы над началом координат, метры. */
+  /** Высота столешницы над полом, метры. */
   readonly tableHeight: number;
   /** Размер столешницы [ширина, глубина], метры. */
   readonly tableSize: readonly [number, number];
-  /** Стартовое удаление камеры от основания, метры. */
-  readonly cameraDistance: number;
+  /**
+   * Запас вокруг модели в кадре. 1.0 — модель вписана впритык, 1.3 — с полями.
+   * Не метры: вылет у коботов отличается втрое, а рамка должна выглядеть одинаково.
+   */
+  readonly cameraZoom: number;
 }
 
 export interface RobotPlugin {
@@ -40,10 +43,13 @@ export interface RobotPlugin {
   readonly id: string;
   readonly displayNameKey: string;
   /**
-   * true — это учебная заглушка, а не модель PROMPOWER. Интерфейс обязан
-   * сказать об этом пользователю.
+   * Ключ next-intl с предупреждением, если модель временная. `null` — это
+   * настоящая модель PROMPOWER и предупреждать не о чем.
+   *
+   * Текст у каждой заглушки свой: у самодельной выдуманы и геометрия, и пределы,
+   * у чужой модели они настоящие, но принадлежат не тому роботу.
    */
-  readonly isPlaceholder: boolean;
+  readonly placeholderNoticeKey: string | null;
   readonly urdfUrl: string;
   /** Соответствие имён ROS-пакетов путям, для `loader.packages` у urdf-loader. */
   readonly packages: Readonly<Record<string, string>>;

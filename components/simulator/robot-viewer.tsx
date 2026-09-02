@@ -5,12 +5,14 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect } from 'react';
 import type { URDFRobot } from 'urdf-loader';
 import type { SceneDefaults } from '@prompower/sim-core';
+import type { RobotBounds } from './fit-robot';
 import { FrameRateProbe } from './frame-rate-probe';
 
 const SURFACE = '#14161a';
 const TABLE_TOP = '#343941';
 const GRID_CELL = '#2f343c';
 const GRID_SECTION = '#454c57';
+const CAMERA_FOV = 40;
 const TABLE_LEG = '#1e2127';
 const TABLE_THICKNESS = 0.04;
 const LEG_THICKNESS = 0.05;
@@ -23,23 +25,35 @@ interface RobotViewerProps {
   /** Углы в радианах, уже зажатые в пределы. */
   values: readonly number[];
   scene: SceneDefaults;
+  /** Габариты загруженной модели: от них считается кадр камеры. */
+  bounds: RobotBounds;
   onFpsSample: (fps: number) => void;
 }
 
-export function RobotViewer({ robot, jointNames, values, scene, onFpsSample }: RobotViewerProps) {
+export function RobotViewer({
+  robot,
+  jointNames,
+  values,
+  scene,
+  bounds,
+  onFpsSample,
+}: RobotViewerProps) {
   useEffect(() => {
     jointNames.forEach((name, index) => {
       robot.setJointValue(name, values[index] ?? 0);
     });
   }, [robot, jointNames, values]);
 
-  const distance = scene.cameraDistance;
+  // Дистанция, на которой описывающая сфера модели ровно вписывается в кадр;
+  // cameraZoom добавляет к ней запас по краям.
+  const fitDistance = bounds.radius / Math.sin((CAMERA_FOV / 2) * (Math.PI / 180));
+  const distance = fitDistance * scene.cameraZoom;
 
   return (
     <Canvas
       shadows
       dpr={[1, 2]}
-      camera={{ position: [distance * 0.75, distance * 0.55, distance * 0.75], fov: 40 }}
+      camera={{ position: [distance * 0.62, distance * 0.5, distance * 0.62], fov: CAMERA_FOV }}
       gl={{ antialias: true }}
     >
       <color attach="background" args={[SURFACE]} />
@@ -76,7 +90,7 @@ export function RobotViewer({ robot, jointNames, values, scene, onFpsSample }: R
 
       <OrbitControls
         makeDefault
-        target={[0, scene.tableHeight * 0.55, 0]}
+        target={[0, bounds.centerY, 0]}
         enableDamping
         minDistance={0.5}
         maxDistance={distance * 4}

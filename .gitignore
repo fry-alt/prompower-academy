@@ -16,9 +16,10 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
-/public/models/**/*.glb
-/public/models/**/*.gltf
-!/public/models/.gitkeep
+# Каталог собирается командой `npm run convert-meshes -- <плагин>`,
+# исходники моделей лежат в packages/robot-plugins/<плагин>/.
+/public/models/*/
+/public/draco/
 
 test-results/
 playwright-report/

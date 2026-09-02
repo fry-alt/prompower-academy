@@ -2,7 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 import type { JointDescriptor, JointLimit } from '@prompower/sim-core';
-import { displayRange, formatValue, fromDisplay, isAngular, toDisplay } from './joint-display';
+import {
+  displayRange,
+  formatDisplay,
+  formatValue,
+  fromDisplay,
+  isAngular,
+  toDisplay,
+} from './joint-display';
 
 /** Ползунок ходит с шагом 0.5°, поэтому «упёрся в предел» считаем с запасом. */
 const LIMIT_EPSILON = 1e-4;
@@ -53,7 +60,7 @@ export function JointPanel({ joints, limits, values, onChange }: JointPanelProps
               type="range"
               min={range.min}
               max={range.max}
-              step={range.step}
+              step="any"
               value={toDisplay(limit, value)}
               onChange={(event) => onChange(index, fromDisplay(limit, event.target.valueAsNumber))}
               className="mt-2 w-full accent-brand"
@@ -61,10 +68,10 @@ export function JointPanel({ joints, limits, values, onChange }: JointPanelProps
 
             <div className="mt-1 flex justify-between font-mono text-[0.6875rem] tabular-nums">
               <span className={atLower ? 'text-warn' : 'text-ink-faint'}>
-                {atLower ? t('atLowerLimit') : `${range.min}${unit}`}
+                {atLower ? t('atLowerLimit') : `${formatDisplay(limit, range.min)}${unit}`}
               </span>
               <span className={atUpper ? 'text-warn' : 'text-ink-faint'}>
-                {atUpper ? t('atUpperLimit') : `${range.max}${unit}`}
+                {atUpper ? t('atUpperLimit') : `${formatDisplay(limit, range.max)}${unit}`}
               </span>
             </div>
           </li>

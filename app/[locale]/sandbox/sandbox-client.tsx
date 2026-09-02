@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { placeholder6Dof } from '@prompower/robot-placeholder-6dof';
+import { jaka6Dof } from '@prompower/robot-jaka-6dof';
 
 /**
  * urdf-loader разбирает XML через DOMParser, а three.js создаёт контекст WebGL —
@@ -15,7 +15,7 @@ const SimulatorSandbox = dynamic(
 );
 
 export function SandboxClient() {
-  return <SimulatorSandbox plugin={placeholder6Dof} />;
+  return <SimulatorSandbox plugin={jaka6Dof} />;
 }
 
 function SandboxFallback() {
