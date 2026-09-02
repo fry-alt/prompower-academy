@@ -1,4 +1,9 @@
-import { flangePose, forwardKinematics, type KinematicChain } from '../kinematics/chain';
+import {
+  flangePose,
+  forwardKinematics,
+  jointFrames,
+  type KinematicChain,
+} from '../kinematics/chain';
 import { solveIk, type IkOptions } from '../kinematics/ik';
 import {
   fromPose,
@@ -38,6 +43,11 @@ export interface PlannerOptions {
   readonly linearStep?: number;
   /** Потолок числа промежуточных поз, чтобы не раздувать память на длинном пути. */
   readonly maxWaypoints?: number;
+  /**
+   * Ниже какой высоты узлам руки опускаться нельзя, метры. Ноль — плоскость
+   * столешницы: робот стоит на ней, и сквозь неё он проходить не должен.
+   */
+  readonly minHeight?: number;
   readonly ik?: IkOptions;
 }
 
@@ -46,15 +56,19 @@ interface Settings {
   readonly jointStep: number;
   readonly linearStep: number;
   readonly maxWaypoints: number;
+  readonly minHeight: number;
   readonly ik?: IkOptions;
 }
 
 const DEFAULTS: Settings = {
   linearSpeed: 0.25,
-  jointStep: 0.05,
+  jointStep: 0.005,
   linearStep: 0.005,
   maxWaypoints: 400,
+  minHeight: 0,
 };
+
+const MM = 1000;
 
 const RAD_TO_DEG = 180 / Math.PI;
 
@@ -97,7 +111,12 @@ function planJointMotion(
   const waypoints: number[][] = [];
   for (let step = 1; step <= steps; step += 1) {
     const t = step / steps;
-    waypoints.push(from.map((value, index) => value + (deltas[index] ?? 0) * t));
+    const pose = from.map((value, index) => value + (deltas[index] ?? 0) * t);
+
+    const collision = belowTable(chain, pose, settings.minHeight);
+    if (collision !== null) return refused(collision);
+
+    waypoints.push(pose);
   }
 
   return planned({ joints: [...target], ticks: toTicks(seconds), waypoints });
@@ -147,6 +166,9 @@ function planLinearMotion(
       );
     }
 
+    const collision = belowTable(chain, solved.joints, settings.minHeight);
+    if (collision !== null) return refused(collision);
+
     seed = [...solved.joints];
     waypoints.push(seed);
   }
@@ -155,6 +177,48 @@ function planLinearMotion(
   const seconds = distance / Math.max(settings.linearSpeed * params.speed, 1e-6);
 
   return planned({ joints: last, ticks: toTicks(seconds), waypoints });
+}
+
+/**
+ * Проверка на проход сквозь столешницу.
+ *
+ * Робот стоит на столе, и опускать под него звенья нельзя — это первое, что
+ * замечает человек, глядя на сцену, и первое, чего не бывает на настоящей
+ * ячейке.
+ *
+ * Проверяются начала координат суставов и фланец, а не полная геометрия
+ * звеньев: точной формы у нас нет и не будет (§4.3 брифа). Локоть, ушедший под
+ * стол, эта проверка ловит — а ради миллиметрового касания кожухом городить
+ * точную геометрию незачем.
+ */
+function belowTable(
+  chain: KinematicChain,
+  joints: readonly number[],
+  minHeight: number,
+): string | null {
+  const frames = jointFrames(chain, joints);
+
+  for (const [index, frame] of frames.entries()) {
+    const z = translationOf(frame).z;
+    if (z >= minHeight) continue;
+
+    const name = chain.joints[index]?.name ?? `сустав ${index + 1}`;
+    return (
+      `Рука прошла бы сквозь стол: сустав ${name} опускается на ` +
+      `${Math.round((minHeight - z) * MM)} мм ниже столешницы. ` +
+      `Попробуйте зайти в точку с другой стороны.`
+    );
+  }
+
+  const flange = translationOf(forwardKinematics(chain, joints)).z;
+  if (flange < minHeight) {
+    return (
+      `Рука прошла бы сквозь стол: фланец опускается на ` +
+      `${Math.round((minHeight - flange) * MM)} мм ниже столешницы.`
+    );
+  }
+
+  return null;
 }
 
 /**

@@ -6,8 +6,11 @@ import {
   assertRobotPluginConsistent,
   clampJointVector,
   flangePose,
+  forwardKinematics,
+  jointFrames,
   parseUrdfChain,
   solveIk,
+  translationOf,
   type RobotPlugin,
 } from '@prompower/sim-core';
 import { robotPlugins } from './index';
@@ -57,6 +60,19 @@ describe.each(robotPlugins.map((plugin) => [plugin.id, plugin] as const))(
       expect(Number.isFinite(pose.x)).toBe(true);
       expect(pose.z).toBeGreaterThan(-0.5);
       expect(Math.hypot(pose.x, pose.y, pose.z)).toBeLessThan(4);
+    });
+
+    it('домашняя поза не проваливается под стол', () => {
+      // Робот стоит на столешнице: узлы руки не должны оказываться ниже неё.
+      // Проверка стоит здесь, потому что домашняя поза задаётся в конфиге
+      // плагина, а провал под стол виден только вместе с геометрией из URDF.
+      const chain = parseUrdfChain(urdfOf(plugin), plugin.joints.map((joint) => joint.urdfName));
+      const pose = [...plugin.homePose];
+
+      const heights = jointFrames(chain, pose).map((frame) => translationOf(frame).z);
+      heights.push(translationOf(forwardKinematics(chain, pose)).z);
+
+      expect(Math.min(...heights)).toBeGreaterThanOrEqual(0);
     });
 
     it('обратная кинематика возвращает руку в позу, полученную прямой', () => {

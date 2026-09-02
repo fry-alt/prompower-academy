@@ -9,8 +9,11 @@ import {
   parseTask,
   parseUrdfChain,
   runToCompletion,
+  step,
+  flangePose,
   type Program,
   type RunState,
+  type Vec3,
   type WorldState,
 } from '@prompower/sim-core';
 import { jakaZu7 } from '@prompower/robot-plugins';
@@ -113,6 +116,30 @@ describe('задание «переложи деталь из A в B»', () => {
     const result = run(grabsEarly);
 
     expect(result.log.some((event) => event.kind === 'graspMissed')).toBe(true);
+  });
+
+  it('деталь едет вместе с фланцем на постоянном смещении', () => {
+    // Прокручиваем до подъёма с деталью и сверяем её положение с фланцем.
+    let state = createRun(demo, startingWorld());
+    let held: { part: Vec3; flange: Vec3 } | null = null;
+    const seen: number[] = [];
+
+    for (let i = 0; i < 40 && state.status === 'running'; i += 1) {
+      state = step(state, planner);
+      if (state.world.grasped === null) continue;
+
+      const part = state.world.objects['деталь']!.position;
+      const flange = flangePose(chain, state.world.joints);
+      seen.push(Math.hypot(part.x - flange.x, part.y - flange.y, part.z - flange.z));
+      held = { part, flange: { x: flange.x, y: flange.y, z: flange.z } };
+    }
+
+    expect(held).not.toBeNull();
+    expect(seen.length).toBeGreaterThan(1);
+    // Расстояние от фланца до детали не меняется, пока она зажата.
+    for (const distance of seen) expect(distance).toBeCloseTo(seen[0]!, 6);
+    // И это смещение — примерно половина высоты кубика под фланцем.
+    expect(seen[0]!).toBeLessThan(0.06);
   });
 
   it('прогон детерминирован: два запуска совпадают', () => {

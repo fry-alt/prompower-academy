@@ -12,6 +12,7 @@ import {
   type KinematicChain,
   type Program,
   type RunState,
+  type SceneObject,
   type Task,
 } from '@prompower/sim-core';
 
@@ -31,6 +32,12 @@ export type RunStatus = 'idle' | 'playing' | 'paused' | 'done';
 
 export interface ProgramRun {
   readonly run: RunState;
+  /**
+   * Объекты сцены для отрисовки. Отличаются от `run.world.objects` во время
+   * движения: зажатая деталь пересчитывается по анимированным углам, иначе она
+   * стоит на месте весь путь и телепортируется в конце.
+   */
+  readonly objects: Readonly<Record<string, SceneObject>>;
   /** Углы для сцены: между шагами они идут по промежуточным позам. */
   readonly joints: readonly number[];
   readonly status: RunStatus;
@@ -133,6 +140,16 @@ export function useProgramRun(
     return () => cancelAnimationFrame(frame);
   }, [status, advance]);
 
+  const objects = useMemo(() => {
+    const { grasped, graspOffset, objects: source } = run.world;
+    if (grasped === null || graspOffset === null) return source;
+
+    const held = source[grasped];
+    if (held === undefined || joints.length === 0) return source;
+
+    return { ...source, [grasped]: { ...held, position: planner.flangePoint(joints, graspOffset) } };
+  }, [run.world, joints, planner]);
+
   const check = useMemo(
     () => (run.status === 'running' ? null : checkTask(task, program, run.world, run.log)),
     [run.status, run.world, run.log, task, program],
@@ -140,6 +157,7 @@ export function useProgramRun(
 
   return {
     run,
+    objects,
     joints,
     status,
     speed,

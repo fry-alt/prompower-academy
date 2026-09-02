@@ -140,6 +140,27 @@ describe('planJoint', () => {
   });
 });
 
+describe('столкновение со столом', () => {
+  it('отказывает, когда сустав уходит под столешницу, и называет глубину', () => {
+    // Локоть, сложенный вперёд-вниз, уводит запястье под столешницу на 81 мм.
+    const result = planner.planJoint(HOME, [0, 1.4, 1.4, 0, 0.7, 0], FULL);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.refusal.reason).toMatch(/прошла бы сквозь стол/);
+    expect(result.refusal.reason).toMatch(/\d+ мм ниже столешницы/);
+  });
+
+  it('нормальное движение над столом проходит', () => {
+    expect(planner.planJoint(HOME, [0.5, 0.8, -1.5, 0, 0.6, 0], FULL).ok).toBe(true);
+  });
+
+  it('высоту отсечки можно опустить, если робот стоит не на столе', () => {
+    const hanging = createPlanner(chain, { minHeight: -2 });
+    expect(hanging.planJoint(HOME, [0, 1.4, 1.4, 0, 0.7, 0], FULL).ok).toBe(true);
+  });
+});
+
 describe('planLinear', () => {
   it('приводит фланец в заданную точку', () => {
     const target = flangePose(chain, [0.4, 1.0, -1.4, 0.2, 0.6, 0.3]);

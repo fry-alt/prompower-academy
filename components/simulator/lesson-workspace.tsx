@@ -155,7 +155,7 @@ function Workspace({
             onFpsSample={onFps}
           >
             <SceneObjects
-              objects={runner.run.world.objects}
+              objects={runner.objects}
               zones={runner.run.world.zones}
               heldId={runner.run.world.grasped}
             />
