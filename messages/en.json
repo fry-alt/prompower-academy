@@ -99,6 +99,11 @@
     },
     "unit": {
       "seconds": "s"
+    },
+    "tab": {
+      "blocks": "Blocks",
+      "list": "List",
+      "code": "Code"
     }
   }
 }

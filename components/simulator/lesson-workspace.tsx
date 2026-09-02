@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Program, RobotPlugin, Task } from '@prompower/sim-core';
-import { ProgramList } from './program-list';
+import { ProgramPanel } from './program-panel';
 import { RobotViewer } from './robot-viewer';
 import { RunControls } from './run-controls';
 import { SceneObjects } from './scene-objects';
@@ -19,14 +19,16 @@ import { includeScene } from './fit-robot';
  * и показана списком. Когда появится Blockly, он встанет на место списка — всё
  * остальное уже работает от него независимо.
  */
+const EMPTY: Program = { version: 1, body: [] };
+
 export function LessonWorkspace({
   plugin,
   task,
-  program,
+  starter,
 }: {
   plugin: RobotPlugin;
   task: Task;
-  program: Program;
+  starter: object;
 }) {
   const t = useTranslations('lesson');
   const tKey = useTranslations();
@@ -52,7 +54,7 @@ export function LessonWorkspace({
     <Workspace
       plugin={plugin}
       task={task}
-      program={program}
+      starter={starter}
       model={model}
       chain={chain.chain}
       fps={fps}
@@ -72,7 +74,7 @@ type Chain = Extract<ReturnType<typeof useUrdfChain>, { status: 'ready' }>['chai
 function Workspace({
   plugin,
   task,
-  program,
+  starter,
   model,
   chain,
   fps,
@@ -81,7 +83,7 @@ function Workspace({
 }: {
   plugin: RobotPlugin;
   task: Task;
-  program: Program;
+  starter: object;
   model: Loaded;
   chain: Chain;
   fps: number;
@@ -89,6 +91,16 @@ function Workspace({
   labels: { t: ReturnType<typeof useTranslations<'lesson'>>; tKey: ReturnType<typeof useTranslations> };
 }) {
   const { t, tKey } = labels;
+
+  // Программа приходит из редактора блоков и меняется по ходу сборки.
+  const [program, setProgram] = useState<Program>(EMPTY);
+  const [programError, setProgramError] = useState<string | null>(null);
+
+  const onProgram = useCallback((next: Program, error: string | null) => {
+    setProgram(next);
+    setProgramError(error);
+  }, []);
+
   const runner = useProgramRun(chain, program, task, plugin.homePose);
 
   // Кадр строится по роботу вместе с деталями и зонами: иначе задание окажется
@@ -123,7 +135,7 @@ function Workspace({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-line p-5 lg:w-96 lg:border-b-0 lg:border-r">
+        <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-line p-5 lg:w-72 lg:border-b-0 lg:border-r">
           <section>
             <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
             <ul className="flex flex-col gap-1 text-sm text-ink-dim">
@@ -137,15 +149,20 @@ function Workspace({
             </ul>
           </section>
 
-          <section className="min-h-0">
-            <h2 className="mb-2 text-sm font-medium">{t('program')}</h2>
-            <ProgramList program={program} current={runner.run.current} />
-          </section>
-
           <Verdict runner={runner} t={t} />
         </aside>
 
-        <main className="relative min-h-0 flex-1">
+        <section className="flex min-h-0 w-full flex-col border-b border-line lg:min-w-[34rem] lg:flex-1 lg:border-b-0 lg:border-r">
+          <ProgramPanel
+            program={program}
+            starter={starter}
+            current={runner.run.current}
+            error={programError}
+            onProgram={onProgram}
+          />
+        </section>
+
+        <main className="relative min-h-0 flex-1 lg:min-w-[26rem]">
           <RobotViewer
             robot={model.robot}
             jointNames={plugin.joints.map((joint) => joint.urdfName)}

@@ -87,6 +87,26 @@ export function useProgramRun(
   runRef.current = run;
   speedRef.current = speed;
 
+  const restart = useCallback(() => {
+    animation.current = null;
+    const fresh = createRun(program, startWorld());
+    runRef.current = fresh;
+    setRun(fresh);
+    setJoints([...homePose]);
+    setStatus('idle');
+  }, [program, startWorld, homePose]);
+
+  /**
+   * Правка программы начинает прогон заново.
+   *
+   * Без этого прогон навсегда оставался бы тем, с которым его создали: ученик
+   * менял блоки, жал «запуск» и смотрел, как исполняется прошлая версия. Ровно
+   * это и случилось при первом запуске редактора.
+   */
+  useEffect(() => {
+    restart();
+  }, [restart]);
+
   /** Один шаг интерпретатора плюс запуск анимации его движения. */
   const advance = useCallback((): RunState => {
     const before = runRef.current;
@@ -173,14 +193,7 @@ export function useProgramRun(
       const after = advance();
       if (after.status !== 'running') setStatus('done');
     }, [advance]),
-    reset: useCallback(() => {
-      animation.current = null;
-      const fresh = createRun(program, startWorld());
-      runRef.current = fresh;
-      setRun(fresh);
-      setJoints([...homePose]);
-      setStatus('idle');
-    }, [program, startWorld, homePose]),
+    reset: restart,
     setSpeed,
   };
 }

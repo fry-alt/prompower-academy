@@ -1,0 +1,113 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "pp_set_speed",
+        "fields": {
+          "PERCENT": 40
+        },
+        "next": {
+          "block": {
+            "type": "pp_comment",
+            "fields": {
+              "TEXT": "Подойти к детали сверху"
+            },
+            "next": {
+              "block": {
+                "type": "pp_move_joint",
+                "fields": {
+                  "J1": 13.2,
+                  "J2": 88.3,
+                  "J3": -118.6,
+                  "J4": 120.3,
+                  "J5": 90,
+                  "J6": -76.8
+                },
+                "next": {
+                  "block": {
+                    "type": "pp_move_linear",
+                    "fields": {
+                      "X": 350,
+                      "Y": 200,
+                      "Z": 61
+                    },
+                    "next": {
+                      "block": {
+                        "type": "pp_gripper",
+                        "fields": {
+                          "ACTION": "close"
+                        },
+                        "next": {
+                          "block": {
+                            "type": "pp_move_linear",
+                            "fields": {
+                              "X": 350,
+                              "Y": 200,
+                              "Z": 220
+                            },
+                            "next": {
+                              "block": {
+                                "type": "pp_comment",
+                                "fields": {
+                                  "TEXT": "Перенести в зону B"
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "pp_move_joint",
+                                    "fields": {
+                                      "J1": -46.3,
+                                      "J2": 88.3,
+                                      "J3": -118.6,
+                                      "J4": 120.3,
+                                      "J5": 90,
+                                      "J6": -136.3
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "pp_move_linear",
+                                        "fields": {
+                                          "X": 350,
+                                          "Y": -200,
+                                          "Z": 61
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "pp_gripper",
+                                            "fields": {
+                                              "ACTION": "open"
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "pp_move_linear",
+                                                "fields": {
+                                                  "X": 350,
+                                                  "Y": -200,
+                                                  "Z": 220
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 24,
+        "y": 24
+      }
+    ]
+  }
+}

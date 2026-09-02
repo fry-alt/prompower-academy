@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { jakaZu7 } from '@prompower/robot-plugins';
-import type { Program, Task } from '@prompower/sim-core';
+import type { Task } from '@prompower/sim-core';
 
 /**
  * three.js и разбор URDF живут только в браузере, поэтому рабочее место урока
@@ -14,8 +14,8 @@ const LessonWorkspace = dynamic(
   { ssr: false, loading: () => <Fallback /> },
 );
 
-export function LessonClient({ task, program }: { task: Task; program: Program }) {
-  return <LessonWorkspace plugin={jakaZu7} task={task} program={program} />;
+export function LessonClient({ task, starter }: { task: Task; starter: object }) {
+  return <LessonWorkspace plugin={jakaZu7} task={task} starter={starter} />;
 }
 
 function Fallback() {

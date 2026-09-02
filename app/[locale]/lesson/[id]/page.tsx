@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { parseProgram, parseTask } from '@prompower/sim-core';
+import { parseTask } from '@prompower/sim-core';
 import { LessonClient } from './lesson-client';
 
 /**
@@ -45,13 +45,14 @@ export default async function LessonPage({
   const folder = LESSONS[id];
   if (folder === undefined) notFound();
 
-  const [task, program] = await Promise.all([
+  const [task, starter] = await Promise.all([
     readJson(join(COURSES, folder, 'task.json')),
-    readJson(join(COURSES, folder, 'demo-program.json')),
+    readJson(join(COURSES, folder, 'starter.json')),
   ]);
 
-  // Разбираем на сервере: битый файл курса должен ломать сборку, а не урок у ученика.
-  return <LessonClient task={parseTask(task)} program={parseProgram(program)} />;
+  // Задание разбираем на сервере: битый файл курса должен ломать сборку, а не
+  // урок у ученика. Холст уходит на клиент как есть — его разбирает Blockly.
+  return <LessonClient task={parseTask(task)} starter={starter as object} />;
 }
 
 async function readJson(path: string): Promise<unknown> {
