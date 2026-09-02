@@ -1,3 +1,4 @@
+import { distanceToBox } from './aabb';
 import type { SceneObject, Vec3 } from './state';
 
 /**
@@ -11,21 +12,9 @@ import type { SceneObject, Vec3 } from './state';
  * брифа). Для «взять кубик со стола» этого достаточно.
  */
 
-/**
- * Расстояние от точки до параллелепипеда. Ноль — точка внутри.
- *
- * Считается по осям независимо: за пределами коробки берётся превышение, внутри
- * — ноль. Это обычная формула расстояния до AABB.
- */
+/** Расстояние от точки до детали. Ноль — точка внутри или на грани. */
 export function distanceToObject(point: Vec3, object: SceneObject): number {
-  const dx = axisGap(point.x, object.position.x, object.size.x);
-  const dy = axisGap(point.y, object.position.y, object.size.y);
-  const dz = axisGap(point.z, object.position.z, object.size.z);
-  return Math.hypot(dx, dy, dz);
-}
-
-function axisGap(point: number, center: number, size: number): number {
-  return Math.max(0, Math.abs(point - center) - size / 2);
+  return distanceToBox(point, object);
 }
 
 /**

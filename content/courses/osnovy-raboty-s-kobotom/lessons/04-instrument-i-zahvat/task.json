@@ -1,0 +1,39 @@
+{
+  "id": "pick-and-place-basic",
+  "world": {
+    "objects": [
+      {
+        "id": "деталь",
+        "position": { "x": 0.35, "y": 0.2, "z": 0.02 },
+        "size": { "x": 0.04, "y": 0.04, "z": 0.04 }
+      }
+    ],
+    "zones": [
+      {
+        "id": "зона A",
+        "position": { "x": 0.35, "y": 0.2, "z": 0.03 },
+        "size": { "x": 0.12, "y": 0.12, "z": 0.06 }
+      },
+      {
+        "id": "зона B",
+        "position": { "x": 0.35, "y": -0.2, "z": 0.03 },
+        "size": { "x": 0.12, "y": 0.12, "z": 0.06 }
+      }
+    ]
+  },
+  "goals": [
+    { "type": "objectInZone", "object": "деталь", "zone": "зона B" },
+    { "type": "gripperState", "state": "open" }
+  ],
+  "constraints": [{ "type": "maxStatements", "value": 12 }],
+  "hints": [
+    {
+      "afterFailedAttempts": 2,
+      "text": "Подходите к детали сверху: опуститься к ней по прямой надёжнее, чем подъехать сбоку."
+    },
+    {
+      "afterFailedAttempts": 4,
+      "text": "Захват надо открыть уже над зоной B, а не по дороге, и после этого поднять руку."
+    }
+  ]
+}

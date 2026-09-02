@@ -29,6 +29,24 @@ export function aabbOf(box: SceneObject | Zone): Aabb {
   };
 }
 
+/**
+ * Расстояние от точки до параллелепипеда. Ноль — точка внутри или на грани.
+ *
+ * По этой мерке захват решает, дотягивается ли он до детали.
+ */
+export function distanceToBox(point: Vec3, box: SceneObject | Zone): number {
+  return Math.hypot(
+    axisGap(point.x, box.position.x, box.size.x),
+    axisGap(point.y, box.position.y, box.size.y),
+    axisGap(point.z, box.position.z, box.size.z),
+  );
+}
+
+/** Насколько точка вышла за границу коробки по одной оси. Внутри — ноль. */
+function axisGap(point: number, center: number, size: number): number {
+  return Math.max(0, Math.abs(point - center) - size / 2);
+}
+
 /** Касание гранью столкновением не считаем: детали, стоящие вплотную, — норма. */
 export function intersects(a: Aabb, b: Aabb): boolean {
   return (
@@ -56,4 +74,21 @@ export function isInsideZone(object: SceneObject, zone: Zone): boolean {
     object.position.y >= bounds.min.y &&
     object.position.y <= bounds.max.y
   );
+}
+
+/**
+ * В какой зоне лежит деталь. `null` — ни в одной.
+ *
+ * Порядок перебора — по идентификаторам: при перекрытии зон результат не должен
+ * зависеть от порядка ключей объекта, иначе теряется детерминированность.
+ */
+export function zoneContaining(
+  zones: Readonly<Record<string, Zone>>,
+  object: SceneObject,
+): string | null {
+  for (const id of Object.keys(zones).sort()) {
+    const zone = zones[id];
+    if (zone !== undefined && isInsideZone(object, zone)) return id;
+  }
+  return null;
 }

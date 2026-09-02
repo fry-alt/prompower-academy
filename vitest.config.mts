@@ -13,7 +13,13 @@ export default defineConfig({
   test: {
     // sim-core и адаптеры — чистая логика, браузер не нужен.
     environment: 'node',
-    include: ['packages/**/*.test.ts', 'components/**/*.test.ts', 'scripts/**/*.test.ts'],
+    include: [
+      'packages/**/*.test.ts',
+      'components/**/*.test.ts',
+      'scripts/**/*.test.ts',
+      // Сквозные прогоны «задание из каталога курсов на настоящей модели».
+      'tests/sim/**/*.test.ts',
+    ],
   },
   resolve: {
     alias: {

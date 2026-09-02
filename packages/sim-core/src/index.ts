@@ -34,6 +34,18 @@ export { createPlanner, type PlannerOptions } from './interpreter/planner';
 
 export { distanceToObject, nearestGraspable } from './world/grasp';
 
+export { checkTask, hintFor, type CheckResult } from './validators/check';
+
+export {
+  parseTask,
+  TaskParseError,
+  type Constraint,
+  type Goal,
+  type Hint,
+  type Task,
+  type TaskWorld,
+} from './validators/task';
+
 export {
   fromAxisAngle,
   fromOrigin,
@@ -97,7 +109,14 @@ export {
   type Zone,
 } from './world/state';
 
-export { aabbOf, intersects, isInsideZone, type Aabb } from './world/aabb';
+export {
+  aabbOf,
+  distanceToBox,
+  intersects,
+  isInsideZone,
+  zoneContaining,
+  type Aabb,
+} from './world/aabb';
 
 export {
   planned,
