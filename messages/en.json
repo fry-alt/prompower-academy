@@ -16,16 +16,37 @@
     "metresUnit": " m",
     "loadFailedTitle": "The robot model could not be loaded",
     "loadFailedHint": "Check that the URDF is reachable at {url} and that the joint names in the plugin match the URDF.",
-    "webglMissing": "The browser could not create a WebGL context. Enable hardware acceleration or open the page in another browser."
+    "webglMissing": "The browser could not create a WebGL context. Enable hardware acceleration or open the page in another browser.",
+    "robotLabel": "Model"
   },
   "robots": {
-    "placeholder6Dof": {
-      "name": "Training manipulator, 6 axes",
-      "notice": "A training stand-in, not a PROMPOWER model. Its geometry and joint limits are invented and will be replaced once the real URDF arrives."
+    "jakaSeries": {
+      "notice": "A temporary JAKA model from the manufacturer's repository, not a PROMPOWER cobot. The kinematics and joint limits are real but belong to a different robot; the files will be replaced once the customer supplies the URDF."
     },
-    "jaka6Dof": {
-      "name": "JAKA cobot, 6 axes",
-      "notice": "A temporary JAKA model from a public repository, not a PROMPOWER cobot. The geometry and joint limits are real but belong to a different robot; the file will be replaced once the customer supplies the URDF."
+    "jakaZu5": {
+      "name": "JAKA Zu 5"
+    },
+    "jakaZu7": {
+      "name": "JAKA Zu 7"
+    },
+    "jakaZu12": {
+      "name": "JAKA Zu 12"
+    },
+    "jakaZu15": {
+      "name": "JAKA Zu 15"
+    },
+    "jakaZu18": {
+      "name": "JAKA Zu 18"
+    },
+    "jakaZu20": {
+      "name": "JAKA Zu 20"
+    },
+    "jakaZu30": {
+      "name": "JAKA Zu 30"
+    },
+    "placeholder6Dof": {
+      "name": "Primitive training manipulator",
+      "notice": "A training stand-in, not a PROMPOWER model. Its geometry and joint limits are invented and will be replaced once the real URDF arrives."
     },
     "joints": {
       "base": "Base",

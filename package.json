@@ -4,7 +4,7 @@
   "private": true,
   "workspaces": [
     "packages/sim-core",
-    "packages/robot-plugins/*"
+    "packages/robot-plugins"
   ],
   "scripts": {
     "dev": "next dev",
@@ -16,12 +16,12 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "convert-meshes": "tsx scripts/convert-meshes.ts",
-    "postinstall": "tsx scripts/sync-draco.ts && tsx scripts/convert-meshes.ts --all",
-    "sync-draco": "tsx scripts/sync-draco.ts"
+    "postinstall": "tsx scripts/sync-draco.ts",
+    "sync-draco": "tsx scripts/sync-draco.ts",
+    "import-models": "tsx scripts/import-jaka-models.ts"
   },
   "dependencies": {
-    "@prompower/robot-jaka-6dof": "*",
-    "@prompower/robot-placeholder-6dof": "*",
+    "@prompower/robot-plugins": "*",
     "@prompower/sim-core": "*",
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "9.7.0",

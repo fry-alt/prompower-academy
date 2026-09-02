@@ -1,19 +1,8 @@
-import type { Metadata } from 'next';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { SandboxClient } from './sandbox-client';
+import { defaultRobotId } from '@prompower/robot-plugins';
+import { redirect } from '@/i18n/navigation';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'sandbox' });
-  return { title: t('title'), description: t('description') };
-}
-
+/** Адрес без модели уводит на модель по умолчанию: пустой песочницы не бывает. */
 export default async function SandboxPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  setRequestLocale(locale);
-  return <SandboxClient />;
+  redirect({ href: `/sandbox/${defaultRobotId}`, locale });
 }

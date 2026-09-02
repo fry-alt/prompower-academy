@@ -8,9 +8,10 @@ const base: RobotPlugin = {
   urdfUrl: '/models/test/test.urdf',
   packages: {},
   joints: [
-    { urdfName: 'j1', labelKey: 'robots.joints.base', type: 'revolute' },
-    { urdfName: 'j2', labelKey: 'robots.joints.shoulder', type: 'revolute' },
+    { urdfName: 'j1', labelKey: 'robots.joints.base' },
+    { urdfName: 'j2', labelKey: 'robots.joints.shoulder' },
   ],
+  chainColors: ['joint', 'base', 'accent'],
   homePose: [0, 0.5],
   palette: { base: '#fff', joint: '#000', accent: '#f00' },
   scene: { tableHeight: 0.75, tableSize: [1, 1], cameraZoom: 2 },
@@ -39,6 +40,12 @@ describe('assertRobotPluginConsistent', () => {
       joints: [base.joints[0]!, base.joints[0]!],
     };
     expect(() => assertRobotPluginConsistent(duplicated)).toThrow(RobotPluginError);
+  });
+
+  it('ловит нехватку цветов цепи', () => {
+    expect(() => assertRobotPluginConsistent({ ...base, chainColors: ['base'] })).toThrow(
+      /цветов цепи 1, а нужно 3/,
+    );
   });
 
   it('ловит нечисловое значение в домашней позе', () => {

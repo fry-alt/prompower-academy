@@ -62,7 +62,7 @@ export function useUrdfRobot(plugin: RobotPlugin): UrdfLoadState {
 
       try {
         const limits = extractJointLimits(robot, plugin.joints);
-        applyPalette(robot, plugin.palette);
+        applyPalette(robot, plugin.palette, plugin.chainColors, plugin.joints);
         robot.rotation.x = -Math.PI / 2;
 
         // Габариты меряем в домашней позе, а не в нулевой: кадр камеры должен

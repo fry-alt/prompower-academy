@@ -6,8 +6,8 @@
  *
  * Берёт исходники плагина
  *
- *   packages/robot-plugins/<плагин>/urdf/<имя>.urdf
- *   packages/robot-plugins/<плагин>/meshes/*.stl|*.glb|*.gltf
+ *   packages/robot-plugins/models/<плагин>/urdf/<имя>.urdf
+ *   packages/robot-plugins/models/<плагин>/meshes/*.stl|*.glb|*.gltf
  *
  * и раскладывает готовое к раздаче
  *
@@ -73,7 +73,7 @@ async function convertPlugin(io: NodeIO, plugin: string, budgetBytes: number): P
 }
 
 function pluginsRoot(): string {
-  return join(resolve(import.meta.dirname, '..'), 'packages', 'robot-plugins');
+  return join(resolve(import.meta.dirname, '..'), 'packages', 'robot-plugins', 'models');
 }
 
 async function convertMeshes(

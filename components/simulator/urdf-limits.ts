@@ -3,9 +3,17 @@ import type { JointDescriptor, JointLimit, JointType } from '@prompower/sim-core
 /**
  * Извлечение пределов суставов из разобранного URDF.
  *
+ * Тип сустава берётся из URDF, а не из конфига плагина: это характеристика
+ * робота. В серии JAKA у Zu 12 суставы объявлены `continuous`, а у остальных
+ * `revolute` — на поведение ползунка это влияет, но конфига не касается.
+ *
  * Модуль описывает робота структурно, а не через типы urdf-loader: так его
  * можно проверить обычными объектами, не поднимая three.js в тестах.
  */
+
+function isSupported(jointType: string): jointType is JointType {
+  return jointType === 'revolute' || jointType === 'continuous' || jointType === 'prismatic';
+}
 
 export interface UrdfJointLike {
   readonly jointType: string;
@@ -18,7 +26,6 @@ export interface UrdfRobotLike {
 
 export interface JointMismatch {
   readonly urdfName: string;
-  readonly expected: JointType;
   /** `null` — сустава с таким именем в URDF вовсе нет. */
   readonly actual: string | null;
 }
@@ -30,7 +37,7 @@ export class UrdfMismatchError extends Error {
       .map((m) =>
         m.actual === null
           ? `${m.urdfName}: нет в URDF`
-          : `${m.urdfName}: ожидался ${m.expected}, в URDF ${m.actual}`,
+          : `${m.urdfName}: тип «${m.actual}» не поддерживается симулятором`,
       )
       .join('; ');
     super(`URDF не совпадает с конфигом плагина — ${detail}`);
@@ -53,22 +60,18 @@ export function extractJointLimits(
     const joint = robot.joints[descriptor.urdfName];
 
     if (joint === undefined) {
-      mismatches.push({ urdfName: descriptor.urdfName, expected: descriptor.type, actual: null });
+      mismatches.push({ urdfName: descriptor.urdfName, actual: null });
       continue;
     }
 
-    if (joint.jointType !== descriptor.type) {
-      mismatches.push({
-        urdfName: descriptor.urdfName,
-        expected: descriptor.type,
-        actual: joint.jointType,
-      });
+    if (!isSupported(joint.jointType)) {
+      mismatches.push({ urdfName: descriptor.urdfName, actual: joint.jointType });
       continue;
     }
 
     limits.push({
       name: descriptor.urdfName,
-      type: descriptor.type,
+      type: joint.jointType,
       lower: Number(joint.limit.lower),
       upper: Number(joint.limit.upper),
     });

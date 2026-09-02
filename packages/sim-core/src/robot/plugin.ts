@@ -7,14 +7,17 @@
  * дублируются — они читаются из URDF при загрузке.
  */
 
-import type { JointType } from '../kinematics/joint-limits';
-
 export interface JointDescriptor {
   /** Имя сустава ровно как в URDF. Расхождение — ошибка загрузки. */
   readonly urdfName: string;
-  /** Ключ next-intl для подписи ползунка. Готовых строк в конфиге нет. */
+  /**
+   * Ключ next-intl для подписи ползунка. Готовых строк в конфиге нет.
+   *
+   * Тип сустава здесь не объявляется намеренно: это характеристика робота, и
+   * она читается из URDF. В одной серии JAKA у Zu 12 суставы `continuous`, а у
+   * остальных `revolute` — конфиг об этом знать не обязан.
+   */
   readonly labelKey: string;
-  readonly type: JointType;
 }
 
 export interface RobotPalette {
@@ -55,6 +58,16 @@ export interface RobotPlugin {
   readonly packages: Readonly<Record<string, string>>;
   /** Порядок суставов = порядок ползунков в интерфейсе. */
   readonly joints: readonly JointDescriptor[];
+  /**
+   * Цвета звеньев по порядку кинематической цепи: сначала основание, затем
+   * звено за каждым суставом. Длина — `joints.length + 1`.
+   *
+   * Позиция, а не имя: у моделей одной серии JAKA звенья названы четырьмя
+   * разными способами (`Link_0`, `Link_01`, `Link1`, `Empty_Link0`), а порядок
+   * цепи одинаков. Красить по материалам тоже нельзя — в URDF от производителей
+   * они безымянные, а править чужие файлы ради раскраски незачем.
+   */
+  readonly chainColors: readonly (keyof RobotPalette)[];
   /** Домашняя поза в радианах, длина совпадает с `joints`. */
   readonly homePose: readonly number[];
   readonly palette: RobotPalette;
@@ -82,6 +95,13 @@ export function assertRobotPluginConsistent(plugin: RobotPlugin): void {
     throw new RobotPluginError(
       `Плагин «${plugin.id}»: домашняя поза из ${plugin.homePose.length} значений ` +
         `не совпадает с ${plugin.joints.length} суставами`,
+    );
+  }
+
+  if (plugin.chainColors.length !== plugin.joints.length + 1) {
+    throw new RobotPluginError(
+      `Плагин «${plugin.id}»: цветов цепи ${plugin.chainColors.length}, ` +
+        `а нужно ${plugin.joints.length + 1} — основание плюс звено на каждый сустав`,
     );
   }
 

@@ -20,8 +20,7 @@
     "paths": {
       "@/*": ["./*"],
       "@prompower/sim-core": ["./packages/sim-core/src/index.ts"],
-      "@prompower/robot-placeholder-6dof": ["./packages/robot-plugins/placeholder-6dof/src/index.ts"],
-      "@prompower/robot-jaka-6dof": ["./packages/robot-plugins/jaka-6dof/src/index.ts"]
+      "@prompower/robot-plugins": ["./packages/robot-plugins/index.ts"]
     }
   },
   "include": [

@@ -3,8 +3,8 @@ import type { JointDescriptor } from '@prompower/sim-core';
 import { extractJointLimits, UrdfMismatchError, type UrdfRobotLike } from './urdf-limits';
 
 const descriptors: JointDescriptor[] = [
-  { urdfName: 'joint_1', labelKey: 'a', type: 'revolute' },
-  { urdfName: 'joint_2', labelKey: 'b', type: 'revolute' },
+  { urdfName: 'joint_1', labelKey: 'a' },
+  { urdfName: 'joint_2', labelKey: 'b' },
 ];
 
 const robot: UrdfRobotLike = {
@@ -27,25 +27,32 @@ describe('extractJointLimits', () => {
     expect(extractJointLimits(robot, descriptors)).toHaveLength(2);
   });
 
+  it('берёт тип сустава из URDF, а не из конфига', () => {
+    // У Zu 12 суставы объявлены continuous, у остальных моделей серии — revolute.
+    const continuous: UrdfRobotLike = {
+      joints: { joint_1: { jointType: 'continuous', limit: { lower: 0, upper: 0 } } },
+    };
+    const limits = extractJointLimits(continuous, [{ urdfName: 'joint_1', labelKey: 'a' }]);
+    expect(limits[0]?.type).toBe('continuous');
+  });
+
   it('сообщает об отсутствующем суставе', () => {
-    const missing: JointDescriptor[] = [{ urdfName: 'joint_9', labelKey: 'c', type: 'revolute' }];
+    const missing: JointDescriptor[] = [{ urdfName: 'joint_9', labelKey: 'c' }];
     expect(() => extractJointLimits(robot, missing)).toThrow(UrdfMismatchError);
     expect(() => extractJointLimits(robot, missing)).toThrow(/joint_9: нет в URDF/);
   });
 
-  it('сообщает о неверном типе сустава', () => {
-    const wrongType: JointDescriptor[] = [
-      { urdfName: 'joint_extra', labelKey: 'd', type: 'revolute' },
-    ];
-    expect(() => extractJointLimits(robot, wrongType)).toThrow(
-      /joint_extra: ожидался revolute, в URDF fixed/,
+  it('сообщает о неподдерживаемом типе сустава', () => {
+    const unsupported: JointDescriptor[] = [{ urdfName: 'joint_extra', labelKey: 'd' }];
+    expect(() => extractJointLimits(robot, unsupported)).toThrow(
+      /joint_extra: тип «fixed» не поддерживается/,
     );
   });
 
   it('собирает все расхождения в одну ошибку', () => {
     const broken: JointDescriptor[] = [
-      { urdfName: 'joint_9', labelKey: 'c', type: 'revolute' },
-      { urdfName: 'joint_extra', labelKey: 'd', type: 'prismatic' },
+      { urdfName: 'joint_9', labelKey: 'c' },
+      { urdfName: 'joint_extra', labelKey: 'd' },
     ];
     try {
       extractJointLimits(robot, broken);

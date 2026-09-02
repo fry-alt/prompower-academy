@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<!--
+  Учебная заглушка: шестиосевой манипулятор из примитивов.
+
+  Это НЕ модель PROMPOWER и не модель JAKA. Геометрия и пределы суставов
+  выдуманы для отладки вьюера и намеренно круглые. Файл будет заменён целиком,
+  когда придёт настоящий URDF от заказчика.
+
+  Цвета заданы тремя именованными материалами (pp_base, pp_joint, pp_accent).
+  Приложение перекрашивает их из палитры плагина, поэтому здесь нейтральный серый.
+-->
+<robot name="placeholder_6dof">
+
+  <material name="pp_base"><color rgba="0.78 0.79 0.80 1.0"/></material>
+  <material name="pp_joint"><color rgba="0.32 0.34 0.36 1.0"/></material>
+  <material name="pp_accent"><color rgba="0.55 0.57 0.59 1.0"/></material>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.06" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.090" length="0.120"/></geometry>
+      <material name="pp_joint"/>
+    </visual>
+  </link>
+
+  <joint name="joint_1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0.120" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1416" upper="3.1416" effort="150" velocity="3.14"/>
+  </joint>
+
+  <link name="link_1">
+    <visual>
+      <origin xyz="0 0 0.070" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.075" length="0.140"/></geometry>
+      <material name="pp_base"/>
+    </visual>
+  </link>
+
+  <joint name="joint_2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0 0 0.140" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.9199" upper="1.9199" effort="150" velocity="3.14"/>
+  </joint>
+
+  <link name="link_2">
+    <visual>
+      <origin xyz="0 0 0.180" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.055" length="0.360"/></geometry>
+      <material name="pp_base"/>
+    </visual>
+  </link>
+
+  <joint name="joint_3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0 0 0.360" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.6180" upper="2.6180" effort="90" velocity="3.14"/>
+  </joint>
+
+  <link name="link_3">
+    <visual>
+      <origin xyz="0 0 0.150" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.045" length="0.300"/></geometry>
+      <material name="pp_base"/>
+    </visual>
+  </link>
+
+  <joint name="joint_4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0 0 0.300" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1416" upper="3.1416" effort="40" velocity="6.28"/>
+  </joint>
+
+  <link name="link_4">
+    <visual>
+      <origin xyz="0 0 0.045" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.040" length="0.090"/></geometry>
+      <material name="pp_joint"/>
+    </visual>
+  </link>
+
+  <joint name="joint_5" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <origin xyz="0 0 0.090" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.0944" upper="2.0944" effort="40" velocity="6.28"/>
+  </joint>
+
+  <link name="link_5">
+    <visual>
+      <origin xyz="0 0 0.040" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.040" length="0.080"/></geometry>
+      <material name="pp_joint"/>
+    </visual>
+  </link>
+
+  <joint name="joint_6" type="revolute">
+    <parent link="link_5"/>
+    <child link="link_6"/>
+    <origin xyz="0 0 0.080" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-6.2832" upper="6.2832" effort="40" velocity="6.28"/>
+  </joint>
+
+  <link name="link_6">
+    <visual>
+      <origin xyz="0 0 0.011" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.031" length="0.022"/></geometry>
+      <material name="pp_accent"/>
+    </visual>
+  </link>
+
+  <joint name="tool0_fixed" type="fixed">
+    <parent link="link_6"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0.022" rpy="0 0 0"/>
+  </joint>
+
+  <link name="tool0"/>
+
+</robot>

@@ -7,11 +7,11 @@ import { expect, test } from '@playwright/test';
  * убеждается, что кадры идут; цифру на среднем ноутбуке смотрим на самой странице.
  */
 
-const SANDBOX = '/ru/sandbox';
-/** joint_2 в URDF модели JAKA ограничен ±2.094 рад — 119.977°, на экране 120.0°. */
-const SHOULDER_UPPER_DEG = '120.0°';
-/** Домашняя поза плеча из конфига плагина: -0.6 рад. */
-const SHOULDER_HOME_DEG = '-34.4°';
+const SANDBOX = '/ru/sandbox/jaka-zu7';
+/** joint_2 у Zu 7 ограничен -1.48..4.62 рад, на экране это -84.8..264.7°. */
+const SHOULDER_UPPER_DEG = '264.7°';
+/** Домашняя поза плеча из конфига серии: 1.571 рад. */
+const SHOULDER_HOME_DEG = '90.0°';
 
 test.beforeEach(async ({ page }) => {
   await page.goto(SANDBOX);
@@ -46,10 +46,9 @@ test('сустав упирается в предел из URDF', async ({ page 
   const slider = page.locator('[data-joint="joint_2"]');
   const readout = page.locator('[data-joint-value="joint_2"]');
 
-  // Границы ползунка приходят из <limit> в URDF, а не из кода приложения:
-  // joint_2 ограничен ±2.094 рад, это ±119.977°.
-  const max = Number(await slider.getAttribute('max'));
-  expect(max).toBeCloseTo(119.977, 2);
+  // Границы ползунка приходят из <limit> в URDF, а не из кода приложения.
+  expect(Number(await slider.getAttribute('max'))).toBeCloseTo(264.706, 2);
+  expect(Number(await slider.getAttribute('min'))).toBeCloseTo(-84.798, 2);
 
   await slider.press('End');
   await expect(readout).toHaveText(SHOULDER_UPPER_DEG);
@@ -68,4 +67,27 @@ test('кнопки позы возвращают робота в известн�
 
   await page.getByRole('button', { name: 'Домашняя поза' }).click();
   await expect(shoulder).toHaveText(SHOULDER_HOME_DEG);
+});
+
+test('выбор модели меняет робота и адрес страницы', async ({ page }) => {
+  const base = page.locator('[data-joint="joint_1"]');
+
+  // У Zu 7 первый сустав revolute с пределом ±359.8° из URDF.
+  expect(Number(await base.getAttribute('max'))).toBeCloseTo(359.817, 2);
+
+  await page.getByTestId('robot-picker').selectOption('jaka-zu12');
+  await page.waitForURL('**/ru/sandbox/jaka-zu12');
+
+  await expect(page.locator('canvas')).toBeVisible();
+  await expect(page.getByTestId('robot-picker')).toHaveValue('jaka-zu12');
+  await expect(page.getByTestId('load-failure')).toHaveCount(0);
+
+  // А у Zu 12 те же суставы объявлены continuous, и ползунок даёт полный оборот.
+  expect(Number(await base.getAttribute('max'))).toBe(180);
+});
+
+test('адрес без модели уводит на модель по умолчанию', async ({ page }) => {
+  await page.goto('/ru/sandbox');
+  await page.waitForURL('**/ru/sandbox/jaka-zu7');
+  await expect(page.getByTestId('robot-picker')).toHaveValue('jaka-zu7');
 });

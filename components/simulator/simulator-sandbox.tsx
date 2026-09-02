@@ -8,6 +8,7 @@ import {
   type RobotPlugin,
 } from '@prompower/sim-core';
 import { JointPanel } from './joint-panel';
+import { RobotPicker } from './robot-picker';
 import { RobotViewer } from './robot-viewer';
 import { useUrdfRobot } from './use-urdf-robot';
 
@@ -18,7 +19,13 @@ import { useUrdfRobot } from './use-urdf-robot';
  * дублирует, а зажим в пределы делается на чтении, поэтому в три.js никогда не
  * уходит значение вне пределов URDF.
  */
-export function SimulatorSandbox({ plugin }: { plugin: RobotPlugin }) {
+export function SimulatorSandbox({
+  plugin,
+  plugins,
+}: {
+  plugin: RobotPlugin;
+  plugins: readonly RobotPlugin[];
+}) {
   const t = useTranslations('sandbox');
   const tKey = useTranslations();
   const [pose, setPose] = useState<number[]>(() => [...plugin.homePose]);
@@ -64,9 +71,9 @@ export function SimulatorSandbox({ plugin }: { plugin: RobotPlugin }) {
 
   return (
     <div className="flex h-dvh flex-col bg-surface-0">
-      <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line px-5 py-3">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-5 py-3">
         <h1 className="text-base font-medium text-ink">{t('title')}</h1>
-        <p className="text-sm text-ink-dim">{tKey(plugin.displayNameKey)}</p>
+        <RobotPicker plugins={plugins} currentId={plugin.id} />
       </header>
 
       {plugin.placeholderNoticeKey !== null && (

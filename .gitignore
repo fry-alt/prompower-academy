@@ -16,10 +16,13 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
-# Каталог собирается командой `npm run convert-meshes -- <плагин>`,
-# исходники моделей лежат в packages/robot-plugins/<плагин>/.
-/public/models/*/
+# Декодер Draco копируется из пакета three на postinstall.
 /public/draco/
+
+# Исходные меши от производителей весят десятки мегабайт и не хранятся здесь.
+# Забрать: npm run import-models. Собрать: npm run convert-meshes -- --all
+# В репозитории лежит только результат конвертации, в public/models.
+/packages/robot-plugins/models/*/meshes/
 
 test-results/
 playwright-report/
