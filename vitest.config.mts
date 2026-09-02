@@ -25,6 +25,7 @@ export default defineConfig({
     alias: {
       '@prompower/sim-core': resolvePackage('./packages/sim-core/src/index.ts'),
       '@prompower/robot-plugins': resolvePackage('./packages/robot-plugins/index.ts'),
+      '@prompower/blocks': resolvePackage('./packages/blocks/src/index.ts'),
     },
   },
 });

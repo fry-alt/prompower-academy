@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "packages/sim-core",
-    "packages/robot-plugins"
+    "packages/robot-plugins",
+    "packages/blocks"
   ],
   "scripts": {
     "dev": "next dev",
@@ -21,10 +22,12 @@
     "import-models": "tsx scripts/import-jaka-models.ts"
   },
   "dependencies": {
+    "@prompower/blocks": "*",
     "@prompower/robot-plugins": "*",
     "@prompower/sim-core": "*",
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "9.7.0",
+    "blockly": "^12.5.1",
     "next": "15.5.25",
     "next-intl": "4.14.2",
     "react": "19.1.9",
