@@ -15,7 +15,7 @@ import type { URDFRobot } from 'urdf-loader';
 const GHOST_MATERIAL = new MeshStandardMaterial({
   color: '#9aa4b5',
   transparent: true,
-  opacity: 0.4,
+  opacity: 0.5,
   // Без этого прозрачные звенья закрывают друг друга и копия выглядит рваной.
   depthWrite: false,
   roughness: 0.9,

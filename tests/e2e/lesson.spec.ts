@@ -92,3 +92,58 @@ test('список показывает ту же программу, что с�
   await page.getByTestId('tab-list').click();
   await expect(page.getByTestId('program-line').first()).toContainText('Подойти к детали сверху');
 });
+
+/**
+ * Показ точки роботу. Проверяется вся цепочка: кнопка в блоке → панель и серая
+ * копия → ползунок → запись в блок → новая программа в списке.
+ */
+const FIRST_MOVE_LINE = 1;
+
+/**
+ * Кнопка первого движения программы.
+ *
+ * Вложенный блок у Blockly оказывается в разметке раньше объемлющего, поэтому
+ * первому движению отвечает последняя кнопка, а не первая. Что нажали именно
+ * его, проверяет сама подсветка строки «По осям» ниже.
+ */
+const FIRST_MOVE_TEACH = '.pp_move_joint > .ppTeachField';
+
+test('кнопка в блоке движения открывает показ точки', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+
+  await expect(page.getByTestId('teach-panel')).toBeVisible();
+  await expect(page.getByTestId('teach-flange')).toContainText('Фланец');
+  await expect(page.locator('[data-testid="teach-panel"] input[type="range"]')).toHaveCount(6);
+});
+
+test('сохранение пишет показанную позу в блок', async ({ page }) => {
+  await page.getByTestId('tab-list').click();
+  await expect(page.getByTestId('program-line').nth(FIRST_MOVE_LINE)).toContainText('По осям 13°');
+
+  await page.getByTestId('tab-blocks').click();
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.locator('[data-testid="teach-panel"] input[type="range"]').first().fill('45');
+  await page.getByTestId('teach-save').click();
+
+  await expect(page.getByTestId('teach-panel')).toHaveCount(0);
+  await page.getByTestId('tab-list').click();
+  await expect(page.getByTestId('program-line').nth(FIRST_MOVE_LINE)).toContainText('По осям 45°');
+});
+
+test('отмена не меняет программу', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.locator('[data-testid="teach-panel"] input[type="range"]').first().fill('45');
+  await page.getByTestId('teach-cancel').click();
+
+  await expect(page.getByTestId('teach-panel')).toHaveCount(0);
+  await page.getByTestId('tab-list').click();
+  await expect(page.getByTestId('program-line').nth(FIRST_MOVE_LINE)).toContainText('По осям 13°');
+});
+
+test('показ точки останавливает прогон', async ({ page }) => {
+  await page.getByTestId('play').click();
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+
+  await expect(page.getByTestId('teach-panel')).toBeVisible();
+  await expect(page.getByTestId('verdict')).toHaveCount(0);
+});
