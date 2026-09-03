@@ -147,3 +147,17 @@ test('показ точки останавливает прогон', async ({ p
   await expect(page.getByTestId('teach-panel')).toBeVisible();
   await expect(page.getByTestId('verdict')).toHaveCount(0);
 });
+
+test('точка, показанная заново, не ломает задание', async ({ page }) => {
+  // У движения по прямой круг длиннее всего: поля → обратная задача → поза
+  // копии → прямая задача → снова поля. Если он теряет точность, деталь мимо
+  // захвата, и это должно быть видно на зачёте, а не в проде.
+  await page.locator('.pp_move_linear > .ppTeachField').last().click();
+  await page.getByTestId('teach-save').click();
+
+  await page.getByTestId('play').click();
+
+  await expect(page.getByTestId('verdict')).toContainText('Задание выполнено', {
+    timeout: 60_000,
+  });
+});
