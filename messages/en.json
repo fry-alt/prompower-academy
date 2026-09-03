@@ -63,6 +63,14 @@
     "loading": "Preparing the task…",
     "loadFailed": "The model failed to load: {reason}",
     "goals": "What to do",
+    "teach": {
+      "title": "Teach the robot a point",
+      "hintJoints": "Drag the sliders — the grey copy shows where the robot will go.",
+      "hintPose": "The stored point is out of reach, the copy starts from the current pose.",
+      "flange": "Flange",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
     "program": "Program",
     "passed": "Task complete.",
     "failed": "Task not complete:",

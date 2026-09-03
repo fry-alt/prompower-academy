@@ -1,9 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Program, RobotPlugin, Task } from '@prompower/sim-core';
+import type { BlockEditorHandle, TeachRequest } from './block-editor';
+import { GhostRobot } from './ghost-robot';
 import { ProgramPanel } from './program-panel';
+import { TeachPanel } from './teach-panel';
+import { fieldsFromJoints, seedJoints, teachKindOf, type TeachKind } from './teach-pose';
 import { RobotViewer } from './robot-viewer';
 import { RunControls } from './run-controls';
 import { SceneObjects } from './scene-objects';
@@ -67,6 +71,14 @@ export function LessonWorkspace({
 type Loaded = Extract<ReturnType<typeof useUrdfRobot>, { status: 'ready' }>;
 type Chain = Extract<ReturnType<typeof useUrdfChain>, { status: 'ready' }>['chain'];
 
+/** Блок, которому сейчас показывают точку, и поза серой копии. */
+interface Teaching {
+  readonly blockId: string;
+  readonly kind: TeachKind;
+  readonly joints: readonly number[];
+  readonly exact: boolean;
+}
+
 /**
  * Внутренний компонент нужен, чтобы хук прогона вызывался только с готовой
  * цепью: хуки нельзя звать условно, а цепь приходит асинхронно.
@@ -103,6 +115,40 @@ function Workspace({
 
   const runner = useProgramRun(chain, program, task, plugin.homePose);
 
+  const editor = useRef<BlockEditorHandle>(null);
+  const [teaching, setTeaching] = useState<Teaching | null>(null);
+
+  const startTeaching = useCallback(
+    (request: TeachRequest) => {
+      const kind = teachKindOf(request.blockType);
+      if (kind === null) return;
+
+      // Показывать точку на ходу нельзя: копия и робот разъедутся на глазах.
+      runner.pause();
+
+      const seed = seedJoints(kind, request.fields, chain, runner.joints);
+      setTeaching({ blockId: request.blockId, kind, joints: seed.joints, exact: seed.exact });
+    },
+    [chain, runner],
+  );
+
+  const saveTeaching = useCallback(() => {
+    if (teaching === null) return;
+    editor.current?.writeFields(
+      teaching.blockId,
+      fieldsFromJoints(teaching.kind, teaching.joints, chain),
+    );
+    setTeaching(null);
+  }, [teaching, chain]);
+
+  const moveTeaching = useCallback((index: number, radians: number) => {
+    setTeaching((current) =>
+      current === null
+        ? null
+        : { ...current, joints: current.joints.map((value, i) => (i === index ? radians : value)) },
+    );
+  }, []);
+
   // Кадр строится по роботу вместе с деталями и зонами: иначе задание окажется
   // за краем экрана, а ученику надо видеть, куда он перекладывает деталь.
   const bounds = useMemo(
@@ -136,20 +182,35 @@ function Workspace({
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-line p-5 lg:w-72 lg:border-b-0 lg:border-r">
-          <section>
-            <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
-            <ul className="flex flex-col gap-1 text-sm text-ink-dim">
-              {task.goals.map((goal, index) => (
-                <li key={index}>
-                  {goal.type === 'objectInZone'
-                    ? t('goal.objectInZone', { object: goal.object, zone: goal.zone })
-                    : t('goal.gripperState', { state: t(`gripper.${goal.state}`) })}
-                </li>
-              ))}
-            </ul>
-          </section>
+          {teaching === null ? (
+            <>
+              <section>
+                <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
+                <ul className="flex flex-col gap-1 text-sm text-ink-dim">
+                  {task.goals.map((goal, index) => (
+                    <li key={index}>
+                      {goal.type === 'objectInZone'
+                        ? t('goal.objectInZone', { object: goal.object, zone: goal.zone })
+                        : t('goal.gripperState', { state: t(`gripper.${goal.state}`) })}
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
-          <Verdict runner={runner} t={t} />
+              <Verdict runner={runner} t={t} />
+            </>
+          ) : (
+            <TeachPanel
+              joints={plugin.joints}
+              limits={model.limits}
+              chain={chain}
+              values={teaching.joints}
+              exact={teaching.exact}
+              onChange={moveTeaching}
+              onSave={saveTeaching}
+              onCancel={() => setTeaching(null)}
+            />
+          )}
         </aside>
 
         <section className="flex min-h-0 w-full flex-col border-b border-line lg:min-w-[34rem] lg:flex-1 lg:border-b-0 lg:border-r">
@@ -159,6 +220,8 @@ function Workspace({
             current={runner.run.current}
             error={programError}
             onProgram={onProgram}
+            onTeach={startTeaching}
+            editorRef={editor}
           />
         </section>
 
@@ -176,6 +239,14 @@ function Workspace({
               zones={runner.run.world.zones}
               heldId={runner.run.world.grasped}
             />
+
+            {teaching !== null && (
+              <GhostRobot
+                source={model.robot}
+                jointNames={plugin.joints.map((joint) => joint.urdfName)}
+                values={teaching.joints}
+              />
+            )}
           </RobotViewer>
 
           <p
