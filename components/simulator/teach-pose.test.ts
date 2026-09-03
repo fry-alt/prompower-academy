@@ -57,22 +57,27 @@ describe('какой блок чему учится', () => {
 
 describe('поля блока в позу копии', () => {
   it('движение по осям берёт углы прямо из полей', () => {
+    // Шестая ось нарочно 120°, а не 180°: предел стенда ±3.14 рад — это 179.9°,
+    // и ровно 180 попали бы в зажим, о котором тест ниже.
     const seed = seedJoints(
       'joints',
-      { J1: 90, J2: 0, J3: -45, J4: 0, J5: 0, J6: 180 },
+      { J1: 90, J2: 0, J3: -45, J4: 0, J5: 0, J6: 120 },
       CHAIN,
       REST,
     );
 
-    expect(seed.exact).toBe(true);
+    expect(seed.note).toBe('ok');
     expect(seed.joints[0]).toBeCloseTo(Math.PI / 2, 9);
     expect(seed.joints[2]).toBeCloseTo(-Math.PI / 4, 9);
   });
 
-  it('углы за пределом сустава зажимаются пределом из URDF', () => {
+  it('углы за пределом сустава зажимаются пределом из URDF и об этом говорится', () => {
     const seed = seedJoints('joints', { J1: 0, J2: 180, J3: 0, J4: 0, J5: 0, J6: 0 }, CHAIN, REST);
 
     expect(seed.joints[1]).toBeCloseTo(2.0, 9);
+    // Копия встала не туда, где записано: молчать об этом нельзя, иначе прогон
+    // откажется от движения, которое ученику только что показали возможным.
+    expect(seed.note).toBe('clamped');
   });
 
   it('движение по прямой решает обратную задачу от записанной точки', () => {
@@ -80,7 +85,7 @@ describe('поля блока в позу копии', () => {
 
     const seed = seedJoints('pose', fields, CHAIN, [0, 0, 0, 0, 0, 0]);
 
-    expect(seed.exact).toBe(true);
+    expect(seed.note).toBe('ok');
     // Допуск в два миллиметра — не запас на всякий случай, а сумма двух
     // известных величин: миллиметр допуска у обратной задачи и округление поля
     // блока до целого миллиметра.
@@ -93,7 +98,7 @@ describe('поля блока в позу копии', () => {
   it('недостижимая точка не ломает обучение, а начинается с текущей позы', () => {
     const seed = seedJoints('pose', { X: 5000, Y: 0, Z: 0, RX: 180, RY: 0, RZ: 0 }, CHAIN, REST);
 
-    expect(seed.exact).toBe(false);
+    expect(seed.note).toBe('unreachable');
     expect([...seed.joints]).toEqual(REST);
   });
 });

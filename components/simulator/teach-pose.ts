@@ -21,13 +21,18 @@ export type TeachKind = 'joints' | 'pose';
 
 export type TeachFields = Readonly<Record<string, number>>;
 
+/**
+ * Что стало с записанной в блоке точкой, пока копия вставала в позу.
+ *
+ * `clamped` и `unreachable` разделены не для красоты: в первом случае копия
+ * стоит рядом с записанным, во втором — совсем в другом месте, и человеку надо
+ * сказать разное.
+ */
+export type SeedNote = 'ok' | 'clamped' | 'unreachable';
+
 export interface Seed {
   readonly joints: readonly number[];
-  /**
-   * Удалось ли встать ровно в записанную точку. Ложь означает, что обратная
-   * задача решения не нашла и копия поднялась в запасной позе.
-   */
-  readonly exact: boolean;
+  readonly note: SeedNote;
 }
 
 const JOINT_FIELDS = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'] as const;
@@ -52,13 +57,16 @@ export function seedJoints(
 
   if (kind === 'joints') {
     const raw = JOINT_FIELDS.map((name) => (fields[name] ?? 0) * DEG_TO_RAD);
-    return { joints: clampJointVector(limits, raw), exact: true };
+    const clamped = clampJointVector(limits, raw);
+    return { joints: clamped, note: differ(raw, clamped) ? 'clamped' : 'ok' };
   }
 
   const solved = solveIk(chain, poseFromFields(fields), fallback);
-  if (!solved.ok) return { joints: [...fallback], exact: false };
+  if (!solved.ok) return { joints: [...fallback], note: 'unreachable' };
 
-  return { joints: clampJointVector(limits, [...solved.joints]), exact: true };
+  // Обратная задача пределы уже соблюдает, зажим здесь — страховка от расхождения
+  // цепи и конфига плагина, а не рабочий путь.
+  return { joints: clampJointVector(limits, [...solved.joints]), note: 'ok' };
 }
 
 /** Значения полей блока для позы копии. */
@@ -107,4 +115,11 @@ function millimetres(metres: number): number {
 /** Минус нуль в поле блока смотрится опечаткой. */
 function zero(value: number): number {
   return value === 0 ? 0 : value;
+}
+
+/** Порог в тысячную градуса: округление в полях блока меньше него. */
+const SAME = 1e-5;
+
+function differ(before: readonly number[], after: readonly number[]): boolean {
+  return before.some((value, index) => Math.abs(value - (after[index] ?? value)) > SAME);
 }

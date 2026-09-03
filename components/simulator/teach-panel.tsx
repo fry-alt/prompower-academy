@@ -8,6 +8,7 @@ import {
   type KinematicChain,
 } from '@prompower/sim-core';
 import { JointPanel } from './joint-panel';
+import type { SeedNote } from './teach-pose';
 
 /**
  * Панель показа точки: то же ручное управление, что на планшете JAKA, только
@@ -21,7 +22,7 @@ export function TeachPanel({
   limits,
   chain,
   values,
-  exact,
+  note,
   onChange,
   onSave,
   onCancel,
@@ -30,8 +31,8 @@ export function TeachPanel({
   limits: readonly JointLimit[];
   chain: KinematicChain;
   values: readonly number[];
-  /** Ложь — записанную точку взять не удалось, об этом надо сказать. */
-  exact: boolean;
+  /** Что стало с записанной точкой: об этом надо сказать человеку. */
+  note: SeedNote;
   onChange: (index: number, radians: number) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -43,9 +44,7 @@ export function TeachPanel({
     <section data-testid="teach-panel" className="flex flex-col gap-4">
       <div>
         <h2 className="text-sm font-medium">{t('teach.title')}</h2>
-        <p className="mt-1 text-sm text-ink-dim">
-          {exact ? t('teach.hintJoints') : t('teach.hintPose')}
-        </p>
+        <p className="mt-1 text-sm text-ink-dim">{t(`teach.hint.${note}`)}</p>
       </div>
 
       <p data-testid="teach-flange" className="font-mono text-xs tabular-nums text-ink-faint">

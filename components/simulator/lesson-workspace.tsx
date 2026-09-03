@@ -7,7 +7,13 @@ import type { BlockEditorHandle, TeachRequest } from './block-editor';
 import { GhostRobot } from './ghost-robot';
 import { ProgramPanel } from './program-panel';
 import { TeachPanel } from './teach-panel';
-import { fieldsFromJoints, seedJoints, teachKindOf, type TeachKind } from './teach-pose';
+import {
+  fieldsFromJoints,
+  seedJoints,
+  teachKindOf,
+  type SeedNote,
+  type TeachKind,
+} from './teach-pose';
 import { RobotViewer } from './robot-viewer';
 import { RunControls } from './run-controls';
 import { SceneObjects } from './scene-objects';
@@ -76,7 +82,7 @@ interface Teaching {
   readonly blockId: string;
   readonly kind: TeachKind;
   readonly joints: readonly number[];
-  readonly exact: boolean;
+  readonly note: SeedNote;
 }
 
 /**
@@ -127,7 +133,7 @@ function Workspace({
       runner.pause();
 
       const seed = seedJoints(kind, request.fields, chain, runner.joints);
-      setTeaching({ blockId: request.blockId, kind, joints: seed.joints, exact: seed.exact });
+      setTeaching({ blockId: request.blockId, kind, joints: seed.joints, note: seed.note });
     },
     [chain, runner],
   );
@@ -164,6 +170,7 @@ function Workspace({
           <p className="text-sm text-ink-dim">{tKey(plugin.displayNameKey)}</p>
         </div>
         <RunControls
+          locked={teaching !== null}
           status={runner.status}
           speed={runner.speed}
           onPlay={runner.play}
@@ -205,7 +212,7 @@ function Workspace({
               limits={model.limits}
               chain={chain}
               values={teaching.joints}
-              exact={teaching.exact}
+              note={teaching.note}
               onChange={moveTeaching}
               onSave={saveTeaching}
               onCancel={() => setTeaching(null)}

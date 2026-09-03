@@ -140,12 +140,23 @@ test('отмена не меняет программу', async ({ page }) => {
   await expect(page.getByTestId('program-line').nth(FIRST_MOVE_LINE)).toContainText('По осям 13°');
 });
 
-test('показ точки останавливает прогон', async ({ page }) => {
+test('показ точки останавливает прогон и не даёт его возобновить', async ({ page }) => {
   await page.getByTestId('play').click();
   await page.locator(FIRST_MOVE_TEACH).last().click();
-
   await expect(page.getByTestId('teach-panel')).toBeVisible();
-  await expect(page.getByTestId('verdict')).toHaveCount(0);
+
+  // Пульт заперт: иначе прогон поедет за спиной у панели и настоящий робот
+  // разойдётся с копией, которая стоит на месте.
+  await expect(page.getByTestId('play')).toBeDisabled();
+  await expect(page.getByTestId('step')).toBeDisabled();
+  await expect(page.getByTestId('reset')).toBeDisabled();
+
+  // Интерпретатор действительно стоит: подсвеченная инструкция не уезжает.
+  await page.getByTestId('tab-list').click();
+  const current = page.locator('[data-current="true"]');
+  const stopped = await current.textContent();
+  await page.waitForTimeout(2000);
+  await expect(current).toHaveText(stopped ?? '');
 });
 
 test('точка, показанная заново, не ломает задание', async ({ page }) => {

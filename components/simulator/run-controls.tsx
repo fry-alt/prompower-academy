@@ -21,9 +21,12 @@ export function RunControls({
   onStep,
   onReset,
   onSpeed,
+  locked = false,
 }: {
   status: RunStatus;
   speed: number;
+  /** Показ точки роботу: пока он идёт, прогон трогать нельзя. */
+  locked?: boolean;
   onPlay: () => void;
   onPause: () => void;
   onStep: () => void;
@@ -40,16 +43,16 @@ export function RunControls({
           {t('controls.pause')}
         </Button>
       ) : (
-        <Button onClick={onPlay} testId="play" primary disabled={finished}>
+        <Button onClick={onPlay} testId="play" primary disabled={finished || locked}>
           {t('controls.play')}
         </Button>
       )}
 
-      <Button onClick={onStep} testId="step" disabled={finished || status === 'playing'}>
+      <Button onClick={onStep} testId="step" disabled={finished || locked || status === 'playing'}>
         {t('controls.step')}
       </Button>
 
-      <Button onClick={onReset} testId="reset">
+      <Button onClick={onReset} testId="reset" disabled={locked}>
         {t('controls.reset')}
       </Button>
 

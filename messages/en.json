@@ -65,8 +65,11 @@
     "goals": "What to do",
     "teach": {
       "title": "Teach the robot a point",
-      "hintJoints": "Drag the sliders — the grey copy shows where the robot will go.",
-      "hintPose": "The stored point is out of reach, the copy starts from the current pose.",
+      "hint": {
+        "ok": "Drag the sliders — the grey copy shows where the robot will go.",
+        "clamped": "The stored angles are past the robot's limits: the copy stands at the closest pose it can reach.",
+        "unreachable": "The stored point is out of reach: the copy starts from the current pose."
+      },
       "flange": "Flange",
       "save": "Save",
       "cancel": "Cancel"

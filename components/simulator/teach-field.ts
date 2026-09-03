@@ -50,13 +50,16 @@ class TeachField extends Blockly.Field<string> {
   }
 }
 
-let registered = false;
-
-/** Расширение регистрируется до определения блоков: иначе Blockly их отвергнет. */
+/**
+ * Расширение регистрируется до определения блоков: иначе Blockly их отвергнет.
+ *
+ * Спрашиваем сам реестр Blockly, а не свой флаг: при горячей перезагрузке модуль
+ * вычисляется заново, а реестр переживает её — повторная регистрация бросает
+ * исключение, в отличие от определения блоков, которое лишь предупреждает.
+ */
 export function registerTeachExtension(): void {
-  if (registered) return;
+  if (Blockly.Extensions.isRegistered(TEACH_EXTENSION)) return;
   Blockly.Extensions.register(TEACH_EXTENSION, function (this: Blockly.Block) {
     this.appendDummyInput('TEACH').appendField(new TeachField());
   });
-  registered = true;
 }

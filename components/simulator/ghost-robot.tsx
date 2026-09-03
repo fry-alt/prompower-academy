@@ -16,7 +16,8 @@ const GHOST_MATERIAL = new MeshStandardMaterial({
   color: '#9aa4b5',
   transparent: true,
   opacity: 0.5,
-  // Без этого прозрачные звенья закрывают друг друга и копия выглядит рваной.
+  // Прозрачное рисуется после непрозрачного, а глубину копия не пишет: иначе её
+  // звенья закрывают друг друга и настоящего робота за ней.
   depthWrite: false,
   roughness: 0.9,
   metalness: 0,
@@ -43,8 +44,6 @@ export function GhostRobot({
       object.receiveShadow = false;
     });
 
-    // Прозрачное рисуется после непрозрачного, иначе копия пропадает за роботом.
-    clone.renderOrder = 1;
     return clone;
   }, [source]);
 
