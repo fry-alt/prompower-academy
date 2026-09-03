@@ -17,10 +17,10 @@
  *    отдельным блоком и общим процентом в панели. Здесь так же — «Скорость»
  *    действует на все последующие движения.
  *
- * 3. Точки задаются числами. На планшете точку показывают роботу вручную
- *    («New point»), а обучения точкам у нас пока нет. Движение по прямой берёт
- *    X, Y, Z в миллиметрах и держит инструмент строго вниз — так выглядит почти
- *    любое «взять и переставить».
+ * 3. Точку показывают роботу. Как и на планшете, поза не набирается числами:
+ *    кнопка в блоке поднимает серую копию робота, её доводят ползунками до
+ *    нужного места и сохраняют. Числа в полях остаются видимыми и правятся
+ *    руками — это тот же источник истины, просто заполняется он показом.
  */
 
 /** Цвета категорий с планшета JAKA. */
@@ -45,6 +45,17 @@ export const BLOCK_TYPES = {
   branch: 'pp_if',
   comment: 'pp_comment',
 } as const;
+
+/**
+ * Расширение Blockly, которое вешает на блок кнопку показа точки.
+ *
+ * Здесь только имя: сам обработчик живёт в слое приложения, потому что ему
+ * нужны Blockly и сцена, а этот пакет остаётся данными без импортов.
+ */
+export const TEACH_EXTENSION = 'pp_teach';
+
+/** Подпись кнопки. Русская, как и весь текст блоков. */
+export const TEACH_LABEL = 'показать роботу';
 
 const BANK_OPTIONS = [
   ['шкафа', 'cabinet'],
@@ -78,20 +89,29 @@ export const BLOCK_DEFINITIONS: readonly object[] = [
     previousStatement: null,
     nextStatement: null,
     colour: COLORS.move,
+    extensions: [TEACH_EXTENSION],
     tooltip: 'Каждая ось приходит в заданный угол. Траектория фланца произвольная.',
   },
   {
     type: BLOCK_TYPES.moveLinear,
-    message0: 'двигаться по прямой в X %1 Y %2 Z %3 мм',
+    message0: 'двигаться по прямой в X %1 Y %2 Z %3 мм %4',
     args0: [
       { type: 'field_number', name: 'X', value: 350, precision: 1 },
       { type: 'field_number', name: 'Y', value: 0, precision: 1 },
       { type: 'field_number', name: 'Z', value: 200, precision: 1 },
+      { type: 'input_dummy' },
+    ],
+    message1: 'поворот RX %1 RY %2 RZ %3 °',
+    args1: [
+      { type: 'field_number', name: 'RX', value: 180, precision: 0.1 },
+      { type: 'field_number', name: 'RY', value: 0, precision: 0.1 },
+      { type: 'field_number', name: 'RZ', value: 0, precision: 0.1 },
     ],
     previousStatement: null,
     nextStatement: null,
     colour: COLORS.move,
-    tooltip: 'Фланец идёт в точку по отрезку, инструмент смотрит вниз.',
+    extensions: [TEACH_EXTENSION],
+    tooltip: 'Фланец идёт в точку по отрезку в показанной ориентации.',
   },
   {
     type: BLOCK_TYPES.setSpeed,

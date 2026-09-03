@@ -40,15 +40,6 @@ const DEFAULT_ACC = 0.5;
 /** Скорость по умолчанию, пока в программе не встретился блок «скорость». */
 const DEFAULT_SPEED = 0.5;
 
-/**
- * Инструмент смотрит строго вниз.
- *
- * Обучения точкам у нас пока нет, а почти любое «взять и переставить» делается
- * именно в этой ориентации. Когда появится показ точек роботом, ориентация
- * приедет вместе с точкой.
- */
-const TOOL_DOWN = { rx: Math.PI, ry: 0, rz: 0 } as const;
-
 interface Context {
   /** Текущая скорость, доля от паспортной. Меняется блоком «скорость». */
   speed: number;
@@ -94,7 +85,9 @@ function translate(block: BlockLike, context: Context): Statement | null {
           x: number(block, 'X') / MM,
           y: number(block, 'Y') / MM,
           z: number(block, 'Z') / MM,
-          ...TOOL_DOWN,
+          rx: number(block, 'RX') * DEG_TO_RAD,
+          ry: number(block, 'RY') * DEG_TO_RAD,
+          rz: number(block, 'RZ') * DEG_TO_RAD,
         },
         speed: context.speed,
         acc: DEFAULT_ACC,

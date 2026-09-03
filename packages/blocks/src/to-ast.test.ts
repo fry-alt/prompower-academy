@@ -34,8 +34,10 @@ describe('движения', () => {
     expect(statement.joints[5]).toBeCloseTo(Math.PI, 9);
   });
 
-  it('переводит миллиметры в метры и держит инструмент вниз', () => {
-    const program = toAst(block(BLOCK_TYPES.moveLinear, { X: 350, Y: -200, Z: 60 }));
+  it('переводит миллиметры в метры', () => {
+    const program = toAst(
+      block(BLOCK_TYPES.moveLinear, { X: 350, Y: -200, Z: 60, RX: 180, RY: 0, RZ: 0 }),
+    );
 
     const statement = program.body[0]!;
     expect(statement.op).toBe('moveL');
@@ -43,7 +45,19 @@ describe('движения', () => {
     expect(statement.pose.x).toBeCloseTo(0.35, 9);
     expect(statement.pose.y).toBeCloseTo(-0.2, 9);
     expect(statement.pose.z).toBeCloseTo(0.06, 9);
-    expect(statement.pose.rx).toBeCloseTo(Math.PI, 9);
+  });
+
+  it('берёт ориентацию из полей блока, а не из константы', () => {
+    const program = toAst(
+      block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100, RX: 90, RY: -45, RZ: 30 }),
+    );
+
+    const statement = program.body[0]!;
+    expect(statement.op).toBe('moveL');
+    if (statement.op !== 'moveL') return;
+    expect(statement.pose.rx).toBeCloseTo(Math.PI / 2, 9);
+    expect(statement.pose.ry).toBeCloseTo(-Math.PI / 4, 9);
+    expect(statement.pose.rz).toBeCloseTo(Math.PI / 6, 9);
   });
 });
 
@@ -54,7 +68,7 @@ describe('скорость', () => {
   });
 
   it('действует на движения ниже, как общая скорость на планшете', () => {
-    const move = block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100 });
+    const move = block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100, RX: 180, RY: 0, RZ: 0 });
     const program = toAst(block(BLOCK_TYPES.setSpeed, { PERCENT: 30 }, {}, move));
 
     const statement = program.body[0]!;
@@ -63,14 +77,14 @@ describe('скорость', () => {
   });
 
   it('до блока скорости действует значение по умолчанию', () => {
-    const program = toAst(block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100 }));
+    const program = toAst(block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100, RX: 180, RY: 0, RZ: 0 }));
     const statement = program.body[0]!;
     if (statement.op !== 'moveL') throw new Error('ожидалось moveL');
     expect(statement.speed).toBeCloseTo(0.5, 9);
   });
 
   it('зажимает нелепые значения', () => {
-    const move = block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100 });
+    const move = block(BLOCK_TYPES.moveLinear, { X: 0, Y: 0, Z: 100, RX: 180, RY: 0, RZ: 0 });
     const program = toAst(block(BLOCK_TYPES.setSpeed, { PERCENT: 900 }, {}, move));
 
     const statement = program.body[0]!;
