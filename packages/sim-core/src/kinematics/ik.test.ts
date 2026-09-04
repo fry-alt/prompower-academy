@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Pose } from '../program/ast';
-import { flangePose } from './chain';
+import { flangePose, forwardKinematics } from './chain';
 import { solveIk } from './ik';
 import { parseUrdfChain } from './urdf';
 
@@ -164,5 +164,26 @@ describe('solveIk', () => {
     if (!fromLeft.ok || !fromRight.ok) return;
     // У шестиосевой руки решений несколько, и стартовая поза выбирает ближайшее.
     expect(fromLeft.joints).not.toEqual(fromRight.joints);
+  });
+
+  it('доворачивает ориентацию, развёрнутую ровно на 180 градусов', () => {
+    // Худший случай для вектора поворота: у разворота на π кососимметричная
+    // часть матрицы вырождается в ноль — ровно как у нулевого поворота. Если их
+    // не различить, решатель отчитается об успехе, не тронув ориентацию.
+    // Цель — та же поза с шестым суставом, повёрнутым на полоборота: она
+    // отличается от затравки ровно на π и достижима по построению.
+    const seed = [0, 1.2, 1.2, 0, 0.742, 0];
+    const target = flangePose(chain, [0, 1.2, 1.2, 0, 0.742, Math.PI]);
+
+    const result = solveIk(chain, target, seed);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // У затравки первый элемент поворота равен −1, у цели +1. Пока полуоборот
+    // не отличали от нуля, решатель возвращал затравку и отчитывался об успехе.
+    const reached = forwardKinematics(chain, result.joints);
+    expect(reached[0] ?? 0).toBeCloseTo(1, 2);
+    expect(reached[5] ?? 0).toBeCloseTo(-1, 2);
   });
 });

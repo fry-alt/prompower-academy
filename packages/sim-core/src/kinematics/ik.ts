@@ -232,11 +232,44 @@ function rotationError(target: Matrix4, current: Matrix4): Vec3 {
   const cos = (r[0]! + r[4]! + r[8]! - 1) / 2;
   const angle = Math.atan2(sin, cos);
 
-  // Поворот почти нулевой: ось не определена, но и доворачивать нечего.
-  if (sin < 1e-9) return { x: 0, y: 0, z: 0 };
+  // Кососимметричная часть вырождается в ноль на обоих концах: и у нулевого
+  // поворота, и у разворота на 180°. Различает их знак косинуса — без этого
+  // полный разворот выглядел бы как «доворачивать нечего», и решатель отчитался
+  // бы об успехе, не тронув ориентацию.
+  if (sin < 1e-9) {
+    if (cos > 0) return { x: 0, y: 0, z: 0 };
+    return halfTurn(r, angle);
+  }
 
   const scale = angle / sin;
   return { x: w.x * scale, y: w.y * scale, z: w.z * scale };
+}
+
+/**
+ * Ось разворота на 180°, добытая из симметричной части: там `R = 2·a·aᵀ − I`,
+ * то есть `R + I = 2·a·aᵀ`, и любой ненулевой столбец сонаправлен оси.
+ *
+ * Берём столбец с наибольшим диагональным элементом: он дальше всех от нуля, и
+ * нормировка выходит устойчивой. Знак оси не важен — поворот на +180° и на
+ * −180° вокруг неё это один и тот же поворот.
+ */
+function halfTurn(r: readonly number[], angle: number): Vec3 {
+  const plus = [
+    r[0]! + 1, r[1]!, r[2]!,
+    r[3]!, r[4]! + 1, r[5]!,
+    r[6]!, r[7]!, r[8]! + 1,
+  ];
+
+  let column = 0;
+  if (plus[4]! > plus[0]!) column = 1;
+  if (plus[8]! > plus[column * 4]!) column = 2;
+
+  const axis = { x: plus[column]!, y: plus[3 + column]!, z: plus[6 + column]! };
+  const length = Math.hypot(axis.x, axis.y, axis.z);
+  if (length < 1e-9) return { x: 0, y: 0, z: 0 };
+
+  const scale = angle / length;
+  return { x: axis.x * scale, y: axis.y * scale, z: axis.z * scale };
 }
 
 /** Поворотная часть произведения `a · bᵀ`, разложенная построчно в девять чисел. */
