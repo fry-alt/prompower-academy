@@ -68,11 +68,24 @@
       "hint": {
         "ok": "Drag the sliders — the grey copy shows where the robot will go.",
         "clamped": "The stored angles are past the robot's limits: the copy stands at the closest pose it can reach.",
-        "unreachable": "The stored point is out of reach: the copy starts from the current pose."
+        "unreachable": "The stored point is out of reach: the copy starts from the current pose.",
+        "blocked": "Out of reach: the step was not applied, the copy stayed put."
       },
       "flange": "Flange",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "tab": {
+        "joints": "Joints",
+        "cartesian": "Coordinates"
+      },
+      "frame": {
+        "label": "Coordinate system",
+        "world": "World",
+        "flange": "Flange"
+      },
+      "step": "Step",
+      "alignDown": "Tool down",
+      "alignDownNote": "A training button. On an industrial pendant you set orientation by hand or through a coordinate system."
     },
     "program": "Program",
     "passed": "Task complete.",
@@ -109,7 +122,9 @@
       "tool": "tool"
     },
     "unit": {
-      "seconds": "s"
+      "seconds": "s",
+      "millimetres": "mm",
+      "degrees": "°"
     },
     "tab": {
       "blocks": "Blocks",
