@@ -41,7 +41,7 @@
 - Modify: `packages/blocks/src/index.ts`
 - Test: `packages/blocks/src/to-ast.test.ts`
 
-- [ ] **Step 1: Поправить существующие тесты «по прямой» и добавить новый**
+- [x] **Step 1: Поправить существующие тесты «по прямой» и добавить новый**
 
 В `packages/blocks/src/to-ast.test.ts` заменить тест «переводит миллиметры в метры и держит инструмент вниз» на два:
 
@@ -75,12 +75,12 @@
 
 Дальше в этом же файле во всех остальных вызовах `block(BLOCK_TYPES.moveLinear, { X: …, Y: …, Z: … })` добавить `RX: 180, RY: 0, RZ: 0`. Без этого `number(block, 'RX')` бросит: полей у макета нет.
 
-- [ ] **Step 2: Убедиться, что тесты падают**
+- [x] **Step 2: Убедиться, что тесты падают**
 
 Run: `npm test -- to-ast`
 Expected: FAIL, `Блок «pp_move_linear»: поле RX не число`.
 
-- [ ] **Step 3: Добавить поля и расширение в определения блоков**
+- [x] **Step 3: Добавить поля и расширение в определения блоков**
 
 В `packages/blocks/src/blocks.ts` заменить пункт 3 верхнего комментария:
 
@@ -140,7 +140,7 @@ export const TEACH_LABEL = 'показать роботу';
 
 Значения по умолчанию 180/0/0 — это прежний «инструмент строго вниз»: в уже сохранённых программах полей RX/RY/RZ нет, Blockly заполнит их сам, и поведение не изменится.
 
-- [ ] **Step 4: Прочитать ориентацию в генераторе AST**
+- [x] **Step 4: Прочитать ориентацию в генераторе AST**
 
 В `packages/blocks/src/to-ast.ts` удалить константу `TOOL_DOWN` вместе с её комментарием и заменить ветку `moveLinear`:
 
@@ -161,7 +161,7 @@ export const TEACH_LABEL = 'показать роботу';
       };
 ```
 
-- [ ] **Step 5: Экспортировать новые имена**
+- [x] **Step 5: Экспортировать новые имена**
 
 В `packages/blocks/src/index.ts` первую строку заменить на:
 
@@ -176,12 +176,12 @@ export {
 } from './blocks';
 ```
 
-- [ ] **Step 6: Прогнать тесты**
+- [x] **Step 6: Прогнать тесты**
 
 Run: `npm test`
 Expected: PASS, все файлы зелёные (включая `to-python.test.ts` — он уже печатал rx/ry/rz).
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add packages/blocks
@@ -196,7 +196,7 @@ git commit -m "feat: у движения по прямой своя ориент
 - Create: `components/simulator/teach-pose.ts`
 - Test: `components/simulator/teach-pose.test.ts`
 
-- [ ] **Step 1: Написать падающий тест**
+- [x] **Step 1: Написать падающий тест**
 
 Создать `components/simulator/teach-pose.test.ts`:
 
@@ -318,12 +318,12 @@ describe('поза копии в поля блока', () => {
 });
 ```
 
-- [ ] **Step 2: Убедиться, что тест падает**
+- [x] **Step 2: Убедиться, что тест падает**
 
 Run: `npm test -- teach-pose`
 Expected: FAIL, `Failed to resolve import "./teach-pose"`.
 
-- [ ] **Step 3: Написать модуль**
+- [x] **Step 3: Написать модуль**
 
 Создать `components/simulator/teach-pose.ts`:
 
@@ -440,12 +440,12 @@ function zero(value: number): number {
 }
 ```
 
-- [ ] **Step 4: Прогнать тест**
+- [x] **Step 4: Прогнать тест**
 
 Run: `npm test -- teach-pose`
 Expected: PASS, 8 тестов.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add components/simulator/teach-pose.ts components/simulator/teach-pose.test.ts
@@ -463,7 +463,7 @@ git commit -m "feat: перевод между полями блока движ�
 
 Unit-теста здесь нет намеренно: всё содержимое — склейка с Blockly, она проверяется e2e-тестом в Task 6. Чистая часть уже покрыта в Task 2.
 
-- [ ] **Step 1: Написать поле-кнопку**
+- [x] **Step 1: Написать поле-кнопку**
 
 Создать `components/simulator/teach-field.ts`:
 
@@ -563,7 +563,7 @@ const ICON =
 
 и в тесте Task 6 селектор `.ppTeachField` меняется на `.blocklyEditableField image`.
 
-- [ ] **Step 2: Научить редактор отдавать запрос и записывать поля**
+- [x] **Step 2: Научить редактор отдавать запрос и записывать поля**
 
 В `components/simulator/block-editor.tsx` дополнить импорты:
 
@@ -681,7 +681,7 @@ function numericFields(block: Blockly.Block): Record<string, number> {
 }
 ```
 
-- [ ] **Step 3: Пробросить через панель программы**
+- [x] **Step 3: Пробросить через панель программы**
 
 В `components/simulator/program-panel.tsx` заменить импорт редактора на:
 
@@ -713,12 +713,12 @@ import { BlockEditor, type BlockEditorHandle, type TeachRequest } from './block-
         <BlockEditor initial={starter} onChange={onProgram} onTeach={onTeach} ref={editorRef} />
 ```
 
-- [ ] **Step 4: Проверить типы**
+- [x] **Step 4: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: ошибка только в `lesson-workspace.tsx` — там ещё не переданы новые пропсы. Закрывается следующей задачей.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add components/simulator/teach-field.ts components/simulator/block-editor.tsx components/simulator/program-panel.tsx
@@ -732,7 +732,7 @@ git commit -m "feat: кнопка показа точки в блоке движ
 **Files:**
 - Create: `components/simulator/ghost-robot.tsx`
 
-- [ ] **Step 1: Написать компонент**
+- [x] **Step 1: Написать компонент**
 
 Создать `components/simulator/ghost-robot.tsx`:
 
@@ -797,12 +797,12 @@ export function GhostRobot({
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: ошибка остаётся только в `lesson-workspace.tsx` (пропсы из Task 3).
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/ghost-robot.tsx
@@ -820,7 +820,7 @@ git commit -m "feat: серая копия робота для показа по
 - Modify: `components/simulator/lesson-workspace.tsx`
 - Modify: `messages/ru.json`, `messages/en.json`
 
-- [ ] **Step 1: Добавить подписи**
+- [x] **Step 1: Добавить подписи**
 
 В `messages/ru.json` внутрь блока `"lesson"` добавить:
 
@@ -848,7 +848,7 @@ git commit -m "feat: серая копия робота для показа по
     },
 ```
 
-- [ ] **Step 2: Написать панель**
+- [x] **Step 2: Написать панель**
 
 Создать `components/simulator/teach-panel.tsx`:
 
@@ -933,7 +933,7 @@ export function TeachPanel({
 }
 ```
 
-- [ ] **Step 3: Связать всё на экране урока**
+- [x] **Step 3: Связать всё на экране урока**
 
 В `components/simulator/lesson-workspace.tsx` дополнить импорты:
 
@@ -1047,17 +1047,17 @@ interface Teaching {
             )}
 ```
 
-- [ ] **Step 4: Проверить типы и тесты**
+- [x] **Step 4: Проверить типы и тесты**
 
 Run: `npm run typecheck && npm test`
 Expected: обе команды зелёные.
 
-- [ ] **Step 5: Посмотреть глазами**
+- [x] **Step 5: Посмотреть глазами**
 
 Run: `npm run dev`, открыть `http://localhost:3000/ru/lesson/instrument-i-zahvat`, нажать «показать роботу» на блоке «двигаться по осям».
 Expected: слева ползунки, в сцене серая копия в позе блока; ползунок двигает только копию; «Сохранить» меняет числа в блоке; «Отмена» — нет.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add components/simulator messages
@@ -1071,7 +1071,7 @@ git commit -m "feat: показ точки роботу прямо на экра
 **Files:**
 - Modify: `tests/e2e/lesson.spec.ts`
 
-- [ ] **Step 1: Написать тесты**
+- [x] **Step 1: Написать тесты**
 
 В конец `tests/e2e/lesson.spec.ts` добавить:
 
@@ -1123,7 +1123,7 @@ test('показ точки останавливает прогон', async ({ p
 });
 ```
 
-- [ ] **Step 2: Прогнать**
+- [x] **Step 2: Прогнать**
 
 Run: `npx playwright test tests/e2e/lesson.spec.ts`
 Expected: PASS, все тесты файла.
@@ -1133,7 +1133,7 @@ Expected: PASS, все тесты файла.
 
 Если панель работает, а `По осям 45°` не появилось — смотреть, дошли ли поля до блока: вкладка «Код» должна показать новый первый аргумент `joint_move`.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add tests/e2e/lesson.spec.ts
@@ -1146,17 +1146,17 @@ git commit -m "test: сквозной сценарий показа точки �
 
 **Files:** нет
 
-- [ ] **Step 1: Типы**
+- [x] **Step 1: Типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 2: Unit**
+- [x] **Step 2: Unit**
 
 Run: `npm test`
 Expected: PASS, не меньше прежних 327 тестов плюс новые.
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 Run: `npx playwright test`
 Expected: PASS, включая прежние 17.
