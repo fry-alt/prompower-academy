@@ -42,7 +42,7 @@
 - Create: `packages/sim-core/src/kinematics/jog.test.ts`
 - Modify: `packages/sim-core/src/index.ts`
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 Создать `packages/sim-core/src/kinematics/jog.test.ts`:
 
@@ -219,12 +219,12 @@ describe('точная поза', () => {
 });
 ```
 
-- [ ] **Step 2: Убедиться, что тесты падают**
+- [x] **Step 2: Убедиться, что тесты падают**
 
 Run: `npx vitest run packages/sim-core/src/kinematics/jog.test.ts`
 Expected: FAIL — модуль `./jog` не найден.
 
-- [ ] **Step 3: Написать модуль**
+- [x] **Step 3: Написать модуль**
 
 Создать `packages/sim-core/src/kinematics/jog.ts`:
 
@@ -342,7 +342,7 @@ function along(axis: 'x' | 'y' | 'z', amount: number): { x: number; y: number; z
 }
 ```
 
-- [ ] **Step 4: Экспортировать из пакета**
+- [x] **Step 4: Экспортировать из пакета**
 
 В `packages/sim-core/src/index.ts` после блока `export { solveIk, ... } from './kinematics/ik';` добавить:
 
@@ -357,12 +357,12 @@ export {
 } from './kinematics/jog';
 ```
 
-- [ ] **Step 5: Прогнать тесты**
+- [x] **Step 5: Прогнать тесты**
 
 Run: `npx vitest run packages/sim-core/src/kinematics/jog.test.ts`
 Expected: PASS, 8 тестов.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add packages/sim-core/src/kinematics/jog.ts packages/sim-core/src/kinematics/jog.test.ts packages/sim-core/src/index.ts
@@ -376,7 +376,7 @@ git commit -m "feat: шаг фланца по осям, точная поза и
 **Files:**
 - Create: `components/simulator/axes-triad.tsx`
 
-- [ ] **Step 1: Написать компонент**
+- [x] **Step 1: Написать компонент**
 
 Создать `components/simulator/axes-triad.tsx`:
 
@@ -464,12 +464,12 @@ export function BaseTriad({ size }: { size: number }) {
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/axes-triad.tsx
@@ -484,7 +484,7 @@ git commit -m "feat: оси инструмента и основания в сц
 - Modify: `messages/ru.json`
 - Modify: `messages/en.json`
 
-- [ ] **Step 1: Добавить русские строки**
+- [x] **Step 1: Добавить русские строки**
 
 В `messages/ru.json` внутри `lesson.teach` добавить ключ `blocked` в `hint` и новые ключи рядом с `flange`:
 
@@ -525,7 +525,7 @@ git commit -m "feat: оси инструмента и основания в сц
 }
 ```
 
-- [ ] **Step 2: Добавить английские строки**
+- [x] **Step 2: Добавить английские строки**
 
 В `messages/en.json` внутри `lesson.teach`:
 
@@ -566,7 +566,7 @@ git commit -m "feat: оси инструмента и основания в сц
 }
 ```
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add messages/ru.json messages/en.json
@@ -580,7 +580,7 @@ git commit -m "feat: строки панели координат"
 **Files:**
 - Create: `components/simulator/cartesian-panel.tsx`
 
-- [ ] **Step 1: Написать панель**
+- [x] **Step 1: Написать панель**
 
 Создать `components/simulator/cartesian-panel.tsx`:
 
@@ -763,12 +763,12 @@ export function CartesianPanel({
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/cartesian-panel.tsx
@@ -783,7 +783,7 @@ git commit -m "feat: панель ручного управления в дек�
 - Modify: `components/simulator/teach-panel.tsx`
 - Modify: `components/simulator/lesson-workspace.tsx`
 
-- [ ] **Step 1: Вкладки в панели показа**
+- [x] **Step 1: Вкладки в панели показа**
 
 Заменить содержимое `components/simulator/teach-panel.tsx`:
 
@@ -916,7 +916,7 @@ export function TeachPanel({
 }
 ```
 
-- [ ] **Step 2: Обработчики жога на экране урока**
+- [x] **Step 2: Обработчики жога на экране урока**
 
 В `components/simulator/lesson-workspace.tsx`:
 
@@ -1002,7 +1002,7 @@ const alignTeaching = (): void => {
 
 (Существующие пропсы `onSave` и `onCancel` оставить как есть — здесь показаны для полноты вызова.)
 
-- [ ] **Step 3: Показать оси в сцене**
+- [x] **Step 3: Показать оси в сцене**
 
 В том же файле внутри `<RobotViewer>` рядом с `GhostRobot` добавить триады. Размер осей берём от габаритов робота, чтобы стрелки не тонули в модели и не заслоняли сцену:
 
@@ -1022,12 +1022,12 @@ const alignTeaching = (): void => {
 константой в метрах: у Zu 3 и Zu 20 разный масштаб, и стрелка в 10 см у одного
 потеряется, а у другого закроет сцену.
 
-- [ ] **Step 4: Проверить типы и тесты**
+- [x] **Step 4: Проверить типы и тесты**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck без вывода, тесты PASS.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add components/simulator/teach-panel.tsx components/simulator/lesson-workspace.tsx
@@ -1041,7 +1041,7 @@ git commit -m "feat: вкладка координат и оси инструм�
 **Files:**
 - Modify: `tests/e2e/lesson.spec.ts`
 
-- [ ] **Step 1: Написать тесты**
+- [x] **Step 1: Написать тесты**
 
 Добавить в конец `tests/e2e/lesson.spec.ts`:
 
@@ -1102,12 +1102,12 @@ test('перпендикуляр набирается кнопкой и сохр
 поза может не довести деталь до зоны, и это нормально. Недопустимо другое —
 ошибка исполнения.
 
-- [ ] **Step 2: Прогнать**
+- [x] **Step 2: Прогнать**
 
 Run: `npx playwright test tests/e2e/lesson.spec.ts`
 Expected: PASS, прежние 14 тестов урока плюс 4 новых.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add tests/e2e/lesson.spec.ts
@@ -1120,17 +1120,17 @@ git commit -m "test: сквозной набор перпендикуляра в
 
 **Files:** нет
 
-- [ ] **Step 1: Типы**
+- [x] **Step 1: Типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 2: Unit**
+- [x] **Step 2: Unit**
 
 Run: `npm test`
 Expected: PASS, не меньше прежних 337 тестов плюс 8 новых.
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 Run: `npx playwright test`
 Expected: PASS, прежние 22 плюс 4 новых.
