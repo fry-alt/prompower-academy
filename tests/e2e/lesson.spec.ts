@@ -172,3 +172,62 @@ test('точка, показанная заново, не ломает зада�
     timeout: 60_000,
   });
 });
+
+/**
+ * Ручное управление в координатах. Проверяется то, чего не видно unit-тестам:
+ * что панель действительно ездит на кинематике, а не показывает свои числа.
+ */
+
+test('вкладка координат показывает позу фланца', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.getByTestId('teach-tab-cartesian').click();
+
+  await expect(page.getByTestId('cartesian-panel')).toBeVisible();
+  await expect(page.getByTestId('axis-X')).toBeVisible();
+  await expect(page.getByTestId('axis-RZ')).toBeVisible();
+});
+
+test('шаг по оси двигает копию', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.getByTestId('teach-tab-cartesian').click();
+
+  const before = Number(await page.getByTestId('axis-Z').inputValue());
+
+  // Шаг в 10 мм: он заведомо больше допуска обратной задачи в миллиметр, и
+  // округлённое до целых миллиметров число обязано измениться.
+  await page.getByTestId('step-1').click();
+  await page.getByTestId('jog-z-minus').click();
+
+  await expect
+    .poll(async () => Number(await page.getByTestId('axis-Z').inputValue()))
+    .toBeLessThan(before);
+});
+
+test('кнопка «инструмент вниз» ставит инструмент вертикально', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.getByTestId('teach-tab-cartesian').click();
+  await page.getByTestId('teach-align-down').click();
+
+  // Обратная задача обещает 0.01 рад по ориентации, поэтому сверяем с запасом в
+  // градус. Знак не важен: 180 и −180 — одна и та же ориентация.
+  await expect
+    .poll(async () => {
+      const rx = Number(await page.getByTestId('axis-RX').inputValue());
+      return Math.abs(Math.abs(rx) - 180);
+    })
+    .toBeLessThan(1);
+});
+
+test('перпендикуляр набирается кнопкой и сохраняется в блок', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.getByTestId('teach-tab-cartesian').click();
+  await page.getByTestId('teach-align-down').click();
+  await page.getByTestId('teach-save').click();
+
+  await expect(page.getByTestId('teach-panel')).toHaveCount(0);
+
+  // Ждём именно вердикта, а не зачёта: показанная кнопкой поза может не довести
+  // деталь до зоны, и это нормально. Недопустима ошибка исполнения.
+  await page.getByTestId('play').click();
+  await expect(page.getByTestId('verdict')).toBeVisible({ timeout: 60_000 });
+});
