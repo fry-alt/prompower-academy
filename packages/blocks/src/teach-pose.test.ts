@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { flangePose, parseUrdfChain, type KinematicChain } from '@prompower/sim-core';
-import { BLOCK_TYPES } from '@prompower/blocks';
+import { BLOCK_TYPES } from './blocks';
 import { fieldsFromJoints, seedJoints, teachKindOf } from './teach-pose';
 
-/** Шестиосевая рука тех же пропорций, что в тестах кинематики ядра. */
+/** Шестиосевая рука наподобие той, что в тестах кинематики ядра, но со своими пределами. */
 const ARM = `<robot name="six_axis">
   <link name="base"/>
   <joint name="j1" type="revolute">
@@ -78,6 +78,19 @@ describe('поля блока в позу копии', () => {
     // Копия встала не туда, где записано: молчать об этом нельзя, иначе прогон
     // откажется от движения, которое ученику только что показали возможным.
     expect(seed.note).toBe('clamped');
+  });
+
+  it('у сустава без пределов заворот не считается зажимом', () => {
+    // У JAKA Zu 12 все шесть суставов объявлены continuous, и это не редкий
+    // случай: там «вышли за предел» сказать не о чем.
+    const free = parseUrdfChain(ARM.replace(/type="revolute"/g, 'type="continuous"'), [
+      'j1', 'j2', 'j3', 'j4', 'j5', 'j6',
+    ]);
+
+    const seed = seedJoints('joints', { J1: 400, J2: 0, J3: 0, J4: 0, J5: 0, J6: 0 }, free, REST);
+
+    expect(seed.note).toBe('ok');
+    expect(seed.joints[0]).toBeCloseTo((40 * Math.PI) / 180, 6);
   });
 
   it('движение по прямой решает обратную задачу от записанной точки', () => {

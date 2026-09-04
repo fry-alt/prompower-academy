@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { Mesh, MeshStandardMaterial } from 'three';
 import type { URDFRobot } from 'urdf-loader';
+import { applyJointValues } from './pose-robot';
 
 /**
  * Серая копия робота: поза, которую показывают, а не исполняют.
@@ -48,9 +49,7 @@ export function GhostRobot({
   }, [source]);
 
   useEffect(() => {
-    jointNames.forEach((name, index) => {
-      ghost.setJointValue(name, values[index] ?? 0);
-    });
+    applyJointValues(ghost, jointNames, values);
   }, [ghost, jointNames, values]);
 
   return <primitive object={ghost} />;

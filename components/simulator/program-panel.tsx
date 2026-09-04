@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, type Ref } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toPython } from '@prompower/blocks';
 import type { Program, Statement } from '@prompower/sim-core';
-import { BlockEditor, type BlockEditorHandle, type TeachRequest } from './block-editor';
+import { BlockEditor, type TeachRequest } from './block-editor';
 import { ProgramList } from './program-list';
 
 /**
@@ -24,7 +24,6 @@ export function ProgramPanel({
   error,
   onProgram,
   onTeach,
-  editorRef,
 }: {
   program: Program;
   starter: object;
@@ -33,7 +32,6 @@ export function ProgramPanel({
   error: string | null;
   onProgram: (program: Program, error: string | null) => void;
   onTeach: (request: TeachRequest) => void;
-  editorRef: Ref<BlockEditorHandle>;
 }) {
   const t = useTranslations('lesson');
   const [tab, setTab] = useState<Tab>('blocks');
@@ -67,7 +65,7 @@ export function ProgramPanel({
 
       {/* Редактор держим смонтированным: Blockly теряет холст при размонтировании. */}
       <div className={tab === 'blocks' ? 'min-h-0 flex-1' : 'hidden'}>
-        <BlockEditor initial={starter} onChange={onProgram} onTeach={onTeach} ref={editorRef} />
+        <BlockEditor initial={starter} onChange={onProgram} onTeach={onTeach} />
       </div>
 
       {tab === 'list' && (

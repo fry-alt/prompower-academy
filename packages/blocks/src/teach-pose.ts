@@ -1,12 +1,13 @@
 import {
   clampJointVector,
   flangePose,
+  isWithinLimits,
   jointLimits,
   solveIk,
   type KinematicChain,
   type Pose,
 } from '@prompower/sim-core';
-import { BLOCK_TYPES } from '@prompower/blocks';
+import { BLOCK_TYPES, MOVE_JOINT_FIELDS } from './blocks';
 
 /**
  * Перевод между полями блока движения и углами суставов серой копии.
@@ -35,7 +36,6 @@ export interface Seed {
   readonly note: SeedNote;
 }
 
-const JOINT_FIELDS = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'] as const;
 const DEG_TO_RAD = Math.PI / 180;
 const RAD_TO_DEG = 180 / Math.PI;
 const MM = 1000;
@@ -53,20 +53,22 @@ export function seedJoints(
   chain: KinematicChain,
   fallback: readonly number[],
 ): Seed {
-  const limits = jointLimits(chain);
-
   if (kind === 'joints') {
-    const raw = JOINT_FIELDS.map((name) => (fields[name] ?? 0) * DEG_TO_RAD);
-    const clamped = clampJointVector(limits, raw);
-    return { joints: clamped, note: differ(raw, clamped) ? 'clamped' : 'ok' };
+    const limits = jointLimits(chain);
+    const raw = MOVE_JOINT_FIELDS.map((name) => (fields[name] ?? 0) * DEG_TO_RAD);
+
+    // Спрашиваем про пределы напрямую, а не сравниваем позу до и после зажима:
+    // у сустава без пределов зажим заворачивает 400° в 40°, и сравнение объявило
+    // бы «вышли за предел» там, где предела нет.
+    const inside = raw.every((value, index) => isWithinLimits(limits[index]!, value));
+    return { joints: clampJointVector(limits, raw), note: inside ? 'ok' : 'clamped' };
   }
 
   const solved = solveIk(chain, poseFromFields(fields), fallback);
-  if (!solved.ok) return { joints: [...fallback], note: 'unreachable' };
-
-  // Обратная задача пределы уже соблюдает, зажим здесь — страховка от расхождения
-  // цепи и конфига плагина, а не рабочий путь.
-  return { joints: clampJointVector(limits, [...solved.joints]), note: 'ok' };
+  // Обратная задача сама держится в пределах, зажимать её ответ нечем.
+  return solved.ok
+    ? { joints: solved.joints, note: 'ok' }
+    : { joints: fallback, note: 'unreachable' };
 }
 
 /** Значения полей блока для позы копии. */
@@ -77,7 +79,7 @@ export function fieldsFromJoints(
 ): TeachFields {
   if (kind === 'joints') {
     return Object.fromEntries(
-      JOINT_FIELDS.map((name, index) => [name, degrees(joints[index] ?? 0)]),
+      MOVE_JOINT_FIELDS.map((name, index) => [name, degrees(joints[index] ?? 0)]),
     );
   }
 
@@ -115,11 +117,4 @@ function millimetres(metres: number): number {
 /** Минус нуль в поле блока смотрится опечаткой. */
 function zero(value: number): number {
   return value === 0 ? 0 : value;
-}
-
-/** Порог в тысячную градуса: округление в полях блока меньше него. */
-const SAME = 1e-5;
-
-function differ(before: readonly number[], after: readonly number[]): boolean {
-  return before.some((value, index) => Math.abs(value - (after[index] ?? value)) > SAME);
 }

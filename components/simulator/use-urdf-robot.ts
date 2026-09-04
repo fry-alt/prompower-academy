@@ -7,6 +7,7 @@ import { clampJointVector, type JointLimit, type RobotPlugin } from '@prompower/
 import { applyPalette, disposeRobot } from './apply-palette';
 import { measureRobot, type RobotBounds } from './fit-robot';
 import { withGltfSupport } from './gltf-mesh-loader';
+import { applyJointValues } from './pose-robot';
 import { extractJointLimits } from './urdf-limits';
 
 export type UrdfLoadState =
@@ -68,9 +69,7 @@ export function useUrdfRobot(plugin: RobotPlugin): UrdfLoadState {
         // Габариты меряем в домашней позе, а не в нулевой: кадр камеры должен
         // подходить к тому, что пользователь увидит при первом открытии.
         const home = clampJointVector(limits, [...plugin.homePose]);
-        plugin.joints.forEach((joint, index) => {
-          robot.setJointValue(joint.urdfName, home[index] ?? 0);
-        });
+        applyJointValues(robot, plugin.joints.map((joint) => joint.urdfName), home);
 
         // Аккуратный URDF уже стоит основанием на нуле, и подъём выйдет нулевым.
         // Но модели встречаются с монтажной плитой, уходящей ниже начала координат.

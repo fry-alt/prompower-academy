@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useImperativeHandle, useRef, type Ref } from 'react';
+import { useEffect, useRef } from 'react';
 import * as Blockly from 'blockly';
 import * as Ru from 'blockly/msg/ru';
-import { BLOCK_DEFINITIONS, TOOLBOX, toAst } from '@prompower/blocks';
+import { BLOCK_DEFINITIONS, TOOLBOX, toAst, type TeachFields } from '@prompower/blocks';
 import type { Program } from '@prompower/sim-core';
 import { registerTeachExtension, TEACH_EVENT, type TeachEventDetail } from './teach-field';
 
@@ -30,52 +30,35 @@ function registerBlocks(): void {
   registered = true;
 }
 
-/** Просьба показать роботу точку: какой блок и что в нём сейчас записано. */
+/**
+ * Просьба показать роботу точку: что за блок, что в нём записано и куда вернуть
+ * показанное.
+ *
+ * Ответ едет обратно тем же путём, что и просьба, — замыканием на рабочую
+ * область. Второго канала до редактора заводить не пришлось.
+ */
 export interface TeachRequest {
-  readonly blockId: string;
   readonly blockType: string;
-  readonly fields: Readonly<Record<string, number>>;
-}
-
-export interface BlockEditorHandle {
-  /** Записать значения полей в блок. Меняет программу так же, как ввод руками. */
-  writeFields(blockId: string, fields: Readonly<Record<string, number>>): void;
+  readonly fields: TeachFields;
+  /** Записать поля в тот же блок. Меняет программу так же, как ввод руками. */
+  write(fields: TeachFields): void;
 }
 
 export function BlockEditor({
   initial,
   onChange,
   onTeach,
-  ref,
 }: {
   /** Стартовое содержимое холста в формате сериализации Blockly. */
   initial?: object;
   onChange: (program: Program, error: string | null) => void;
   onTeach: (request: TeachRequest) => void;
-  ref?: Ref<BlockEditorHandle>;
 }) {
   const host = useRef<HTMLDivElement>(null);
-  const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const latest = useRef(onChange);
   latest.current = onChange;
   const teach = useRef(onTeach);
   teach.current = onTeach;
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      writeFields(blockId, fields) {
-        const block = workspaceRef.current?.getBlockById(blockId);
-        if (block === undefined || block === null) return;
-
-        for (const [name, value] of Object.entries(fields)) {
-          if (block.getField(name) === null) continue;
-          block.setFieldValue(value, name);
-        }
-      },
-    }),
-    [],
-  );
 
   useEffect(() => {
     const container = host.current;
@@ -94,13 +77,20 @@ export function BlockEditor({
       move: { scrollbars: true, drag: true, wheel: true },
     });
 
-    workspaceRef.current = workspace;
+    // Панель показа живёт дольше одного нажатия, а холст может исчезнуть раньше:
+    // блок ищем в момент записи и молчим, если рабочей области уже нет.
+    let disposed = false;
 
     const onTeachEvent = (event: Event): void => {
       const { blockId } = (event as CustomEvent<TeachEventDetail>).detail;
       const block = workspace.getBlockById(blockId);
       if (block === null) return;
-      teach.current({ blockId: block.id, blockType: block.type, fields: numericFields(block) });
+
+      teach.current({
+        blockType: block.type,
+        fields: numericFields(block),
+        write: (fields) => writeFields(disposed ? null : workspace.getBlockById(blockId), fields),
+      });
     };
     container.addEventListener(TEACH_EVENT, onTeachEvent);
 
@@ -131,9 +121,9 @@ export function BlockEditor({
     observer.observe(container);
 
     return () => {
+      disposed = true;
       observer.disconnect();
       container.removeEventListener(TEACH_EVENT, onTeachEvent);
-      workspaceRef.current = null;
       workspace.dispose();
     };
   }, [initial]);
@@ -158,6 +148,16 @@ const DARK_THEME = Blockly.Theme.defineTheme('prompower', {
     cursorColour: '#e08a3c',
   },
 });
+
+/** Запись показанного обратно в блок: имена без поля молча пропускаем. */
+function writeFields(block: Blockly.Block | null, fields: TeachFields): void {
+  if (block === null) return;
+
+  for (const [name, value] of Object.entries(fields)) {
+    if (block.getField(name) === null) continue;
+    block.setFieldValue(value, name);
+  }
+}
 
 /**
  * Числовые поля блока.

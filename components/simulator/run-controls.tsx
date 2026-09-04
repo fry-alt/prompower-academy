@@ -21,12 +21,12 @@ export function RunControls({
   onStep,
   onReset,
   onSpeed,
-  locked = false,
+  locked,
 }: {
   status: RunStatus;
   speed: number;
   /** Показ точки роботу: пока он идёт, прогон трогать нельзя. */
-  locked?: boolean;
+  locked: boolean;
   onPlay: () => void;
   onPause: () => void;
   onStep: () => void;

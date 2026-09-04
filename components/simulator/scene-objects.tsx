@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { DoubleSide, PlaneGeometry } from 'three';
+import { DoubleSide, EdgesGeometry, PlaneGeometry } from 'three';
 import type { SceneObject, Vec3, Zone } from '@prompower/sim-core';
 
 /**
@@ -38,17 +38,7 @@ export function SceneObjects({
   return (
     <group>
       {zoneList.map((zone) => (
-        <group key={zone.id} position={toScene({ ...zone.position, z: 0.002 })}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[zone.size.x, zone.size.y]} />
-            <meshBasicMaterial color="#7c8798" transparent opacity={0.4} side={DoubleSide} />
-          </mesh>
-          {/* Контур: без него площадка сливается со столешницей под углом. */}
-          <lineSegments rotation={[-Math.PI / 2, 0, 0]}>
-            <edgesGeometry args={[new PlaneGeometry(zone.size.x, zone.size.y)]} />
-            <lineBasicMaterial color="#aab4c2" />
-          </lineSegments>
-        </group>
+        <ZonePatch key={zone.id} zone={zone} />
       ))}
 
       {objectList.map((object) => (
@@ -60,6 +50,33 @@ export function SceneObjects({
           />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+/**
+ * Площадка зоны с контуром: без контура она сливается со столешницей под углом.
+ *
+ * Геометрия контура живёт в памяти между рендерами намеренно. В аргументах
+ * примитива R3F сравнивает по ссылке, и свежий `PlaneGeometry` заставлял бы
+ * пересобирать буферы на видеокарте каждый рендер — а во время показа точки
+ * рендеры идут потоком, по одному на каждое движение ползунка.
+ */
+function ZonePatch({ zone }: { zone: Zone }) {
+  const edges = useMemo(
+    () => new EdgesGeometry(new PlaneGeometry(zone.size.x, zone.size.y)),
+    [zone.size.x, zone.size.y],
+  );
+
+  return (
+    <group position={toScene({ ...zone.position, z: 0.002 })}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[zone.size.x, zone.size.y]} />
+        <meshBasicMaterial color="#7c8798" transparent opacity={0.4} side={DoubleSide} />
+      </mesh>
+      <lineSegments rotation={[-Math.PI / 2, 0, 0]} geometry={edges}>
+        <lineBasicMaterial color="#aab4c2" />
+      </lineSegments>
     </group>
   );
 }

@@ -57,6 +57,15 @@ export const TEACH_EXTENSION = 'pp_teach';
 /** Подпись кнопки. Русская, как и весь текст блоков. */
 export const TEACH_LABEL = 'показать роботу';
 
+/**
+ * Поля позы у блоков движения, по порядку осей и координат.
+ *
+ * Списки читают и генератор AST, и показ точки: имена полей — контракт блока, и
+ * жить он должен там же, где объявлены сами поля.
+ */
+export const MOVE_JOINT_FIELDS = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'] as const;
+export const MOVE_LINEAR_FIELDS = ['X', 'Y', 'Z', 'RX', 'RY', 'RZ'] as const;
+
 const BANK_OPTIONS = [
   ['шкафа', 'cabinet'],
   ['инструмента', 'tool'],

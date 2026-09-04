@@ -1,5 +1,5 @@
 import type { Condition, IoBank, Program, Statement } from '@prompower/sim-core';
-import { BLOCK_TYPES } from './blocks';
+import { BLOCK_TYPES, MOVE_JOINT_FIELDS } from './blocks';
 
 /**
  * Дерево блоков в AST.
@@ -71,9 +71,7 @@ function translate(block: BlockLike, context: Context): Statement | null {
     case BLOCK_TYPES.moveJoint:
       return {
         op: 'moveJ',
-        joints: ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'].map(
-          (field) => number(block, field) * DEG_TO_RAD,
-        ),
+        joints: MOVE_JOINT_FIELDS.map((field) => number(block, field) * DEG_TO_RAD),
         speed: context.speed,
         acc: DEFAULT_ACC,
       };

@@ -1,25 +1,18 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  flangePose,
-  type JointDescriptor,
-  type JointLimit,
-  type KinematicChain,
-} from '@prompower/sim-core';
+import { jointLimits, type JointDescriptor, type KinematicChain } from '@prompower/sim-core';
+import { fieldsFromJoints, type SeedNote } from '@prompower/blocks';
 import { JointPanel } from './joint-panel';
-import type { SeedNote } from './teach-pose';
 
 /**
  * Панель показа точки: то же ручное управление, что на планшете JAKA, только
  * двигает оно серую копию, а не робота.
  */
 
-const MM = 1000;
-
 export function TeachPanel({
   joints,
-  limits,
   chain,
   values,
   note,
@@ -28,7 +21,6 @@ export function TeachPanel({
   onCancel,
 }: {
   joints: readonly JointDescriptor[];
-  limits: readonly JointLimit[];
   chain: KinematicChain;
   values: readonly number[];
   /** Что стало с записанной точкой: об этом надо сказать человеку. */
@@ -38,7 +30,14 @@ export function TeachPanel({
   onCancel: () => void;
 }) {
   const t = useTranslations('lesson');
-  const pose = flangePose(chain, values);
+
+  // Пределы ползунков — те же, по которым зажимается показанная поза: два
+  // разбора одного URDF разошлись бы молча, и ползунок разрешил бы недоступное.
+  const limits = useMemo(() => jointLimits(chain), [chain]);
+
+  // Ровно те числа, которые уедут в блок по «Сохранить». Считать их здесь
+  // отдельно значило бы показывать одно, а записывать другое.
+  const flange = useMemo(() => fieldsFromJoints('pose', values, chain), [values, chain]);
 
   return (
     <section data-testid="teach-panel" className="flex flex-col gap-4">
@@ -48,8 +47,7 @@ export function TeachPanel({
       </div>
 
       <p data-testid="teach-flange" className="font-mono text-xs tabular-nums text-ink-faint">
-        {t('teach.flange')} X {Math.round(pose.x * MM)} Y {Math.round(pose.y * MM)} Z{' '}
-        {Math.round(pose.z * MM)}
+        {t('teach.flange')} X {flange.X} Y {flange.Y} Z {flange.Z}
       </p>
 
       <JointPanel joints={joints} limits={limits} values={values} onChange={onChange} />
@@ -59,7 +57,7 @@ export function TeachPanel({
           type="button"
           data-testid="teach-save"
           onClick={onSave}
-          className="rounded-panel bg-brand px-3 py-1.5 text-sm text-surface-0"
+          className="rounded-panel border border-brand/50 bg-brand/15 px-3 py-1.5 text-sm text-ink hover:bg-brand/25"
         >
           {t('teach.save')}
         </button>

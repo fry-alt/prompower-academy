@@ -7,6 +7,7 @@ import type { URDFRobot } from 'urdf-loader';
 import type { SceneDefaults } from '@prompower/sim-core';
 import type { RobotBounds } from './fit-robot';
 import { FrameRateProbe } from './frame-rate-probe';
+import { applyJointValues } from './pose-robot';
 
 const SURFACE = '#14161a';
 const TABLE_TOP = '#343941';
@@ -42,9 +43,7 @@ export function RobotViewer({
   children,
 }: RobotViewerProps) {
   useEffect(() => {
-    jointNames.forEach((name, index) => {
-      robot.setJointValue(name, values[index] ?? 0);
-    });
+    applyJointValues(robot, jointNames, values);
   }, [robot, jointNames, values]);
 
   // Дистанция, на которой описывающая сфера модели ровно вписывается в кадр;

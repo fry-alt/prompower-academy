@@ -1,19 +1,20 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Program, RobotPlugin, Task } from '@prompower/sim-core';
-import type { BlockEditorHandle, TeachRequest } from './block-editor';
-import { GhostRobot } from './ghost-robot';
-import { ProgramPanel } from './program-panel';
-import { TeachPanel } from './teach-panel';
 import {
   fieldsFromJoints,
   seedJoints,
   teachKindOf,
   type SeedNote,
+  type TeachFields,
   type TeachKind,
-} from './teach-pose';
+} from '@prompower/blocks';
+import type { TeachRequest } from './block-editor';
+import { GhostRobot } from './ghost-robot';
+import { ProgramPanel } from './program-panel';
+import { TeachPanel } from './teach-panel';
 import { RobotViewer } from './robot-viewer';
 import { RunControls } from './run-controls';
 import { SceneObjects } from './scene-objects';
@@ -79,10 +80,11 @@ type Chain = Extract<ReturnType<typeof useUrdfChain>, { status: 'ready' }>['chai
 
 /** Блок, которому сейчас показывают точку, и поза серой копии. */
 interface Teaching {
-  readonly blockId: string;
   readonly kind: TeachKind;
   readonly joints: readonly number[];
   readonly note: SeedNote;
+  /** Куда вернуть показанное: замыкание на тот самый блок в редакторе. */
+  readonly write: (fields: TeachFields) => void;
 }
 
 /**
@@ -121,39 +123,40 @@ function Workspace({
 
   const runner = useProgramRun(chain, program, task, plugin.homePose);
 
-  const editor = useRef<BlockEditorHandle>(null);
   const [teaching, setTeaching] = useState<Teaching | null>(null);
 
-  const startTeaching = useCallback(
-    (request: TeachRequest) => {
-      const kind = teachKindOf(request.blockType);
-      if (kind === null) return;
+  const startTeaching = (request: TeachRequest): void => {
+    const kind = teachKindOf(request.blockType);
+    if (kind === null) return;
 
-      // Показывать точку на ходу нельзя: копия и робот разъедутся на глазах.
-      runner.pause();
+    // Показывать точку на ходу нельзя: копия и робот разъедутся на глазах.
+    runner.pause();
 
-      const seed = seedJoints(kind, request.fields, chain, runner.joints);
-      setTeaching({ blockId: request.blockId, kind, joints: seed.joints, note: seed.note });
-    },
-    [chain, runner],
-  );
+    const seed = seedJoints(kind, request.fields, chain, runner.joints);
+    setTeaching({ kind, joints: seed.joints, note: seed.note, write: request.write });
+  };
 
-  const saveTeaching = useCallback(() => {
+  const saveTeaching = (): void => {
     if (teaching === null) return;
-    editor.current?.writeFields(
-      teaching.blockId,
-      fieldsFromJoints(teaching.kind, teaching.joints, chain),
-    );
+    teaching.write(fieldsFromJoints(teaching.kind, teaching.joints, chain));
     setTeaching(null);
-  }, [teaching, chain]);
+  };
 
-  const moveTeaching = useCallback((index: number, radians: number) => {
+  const moveTeaching = (index: number, radians: number): void => {
     setTeaching((current) =>
       current === null
         ? null
-        : { ...current, joints: current.joints.map((value, i) => (i === index ? radians : value)) },
+        : {
+            ...current,
+            joints: current.joints.map((value, i) => (i === index ? radians : value)),
+            // Копия уже там, куда её привели: прежняя оговорка про записанную
+            // точку с этого момента неверна.
+            note: 'ok',
+          },
     );
-  }, []);
+  };
+
+  const jointNames = useMemo(() => plugin.joints.map((joint) => joint.urdfName), [plugin]);
 
   // Кадр строится по роботу вместе с деталями и зонами: иначе задание окажется
   // за краем экрана, а ученику надо видеть, куда он перекладывает деталь.
@@ -190,26 +193,10 @@ function Workspace({
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-line p-5 lg:w-72 lg:border-b-0 lg:border-r">
           {teaching === null ? (
-            <>
-              <section>
-                <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
-                <ul className="flex flex-col gap-1 text-sm text-ink-dim">
-                  {task.goals.map((goal, index) => (
-                    <li key={index}>
-                      {goal.type === 'objectInZone'
-                        ? t('goal.objectInZone', { object: goal.object, zone: goal.zone })
-                        : t('goal.gripperState', { state: t(`gripper.${goal.state}`) })}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <Verdict runner={runner} t={t} />
-            </>
+            <TaskBrief task={task} runner={runner} t={t} />
           ) : (
             <TeachPanel
               joints={plugin.joints}
-              limits={model.limits}
               chain={chain}
               values={teaching.joints}
               note={teaching.note}
@@ -228,14 +215,13 @@ function Workspace({
             error={programError}
             onProgram={onProgram}
             onTeach={startTeaching}
-            editorRef={editor}
           />
         </section>
 
         <main className="relative min-h-0 flex-1 lg:min-w-[26rem]">
           <RobotViewer
             robot={model.robot}
-            jointNames={plugin.joints.map((joint) => joint.urdfName)}
+            jointNames={jointNames}
             values={runner.joints}
             scene={plugin.scene}
             bounds={bounds}
@@ -248,11 +234,7 @@ function Workspace({
             />
 
             {teaching !== null && (
-              <GhostRobot
-                source={model.robot}
-                jointNames={plugin.joints.map((joint) => joint.urdfName)}
-                values={teaching.joints}
-              />
+              <GhostRobot source={model.robot} jointNames={jointNames} values={teaching.joints} />
             )}
           </RobotViewer>
 
@@ -265,6 +247,36 @@ function Workspace({
         </main>
       </div>
     </div>
+  );
+}
+
+/** Условие задания и итог прогона — то, что видно, пока точку не показывают. */
+function TaskBrief({
+  task,
+  runner,
+  t,
+}: {
+  task: Task;
+  runner: ReturnType<typeof useProgramRun>;
+  t: ReturnType<typeof useTranslations<'lesson'>>;
+}) {
+  return (
+    <>
+      <section>
+        <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
+        <ul className="flex flex-col gap-1 text-sm text-ink-dim">
+          {task.goals.map((goal, index) => (
+            <li key={index}>
+              {goal.type === 'objectInZone'
+                ? t('goal.objectInZone', { object: goal.object, zone: goal.zone })
+                : t('goal.gripperState', { state: t(`gripper.${goal.state}`) })}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <Verdict runner={runner} t={t} />
+    </>
   );
 }
 
