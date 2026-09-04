@@ -30,6 +30,15 @@ export { parseUrdfChain, UrdfParseError } from './kinematics/urdf';
 
 export { solveIk, type IkOptions, type IkResult } from './kinematics/ik';
 
+export {
+  alignToolDown,
+  jogPose,
+  jogToPose,
+  type JogAxis,
+  type JogFrame,
+  type JogResult,
+} from './kinematics/jog';
+
 export { createPlanner, type PlannerOptions } from './interpreter/planner';
 
 export { distanceToObject, nearestGraspable } from './world/grasp';
