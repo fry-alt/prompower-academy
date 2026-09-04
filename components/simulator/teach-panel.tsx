@@ -1,15 +1,30 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { jointLimits, type JointDescriptor, type KinematicChain } from '@prompower/sim-core';
+import {
+  jointLimits,
+  type JogAxis,
+  type JogFrame,
+  type JointDescriptor,
+  type KinematicChain,
+  type Pose,
+} from '@prompower/sim-core';
 import { fieldsFromJoints, type SeedNote } from '@prompower/blocks';
+import { CartesianPanel } from './cartesian-panel';
 import { JointPanel } from './joint-panel';
 
 /**
- * Панель показа точки: то же ручное управление, что на планшете JAKA, только
- * двигает оно серую копию, а не робота.
+ * Панель показа точки: ручное управление, двигающее серую копию, а не робота.
+ *
+ * Две вкладки повторяют экран ручного управления промышленного пульта: суставы
+ * по отдельности и поза фланца в координатах.
  */
+
+/** Что стало с позой копии. `blocked` — последний шаг не прошёл. */
+export type TeachNote = SeedNote | 'blocked';
+
+type Tab = 'joints' | 'cartesian';
 
 export function TeachPanel({
   joints,
@@ -17,6 +32,9 @@ export function TeachPanel({
   values,
   note,
   onChange,
+  onJog,
+  onPose,
+  onAlignDown,
   onSave,
   onCancel,
 }: {
@@ -24,12 +42,16 @@ export function TeachPanel({
   chain: KinematicChain;
   values: readonly number[];
   /** Что стало с записанной точкой: об этом надо сказать человеку. */
-  note: SeedNote;
+  note: TeachNote;
   onChange: (index: number, radians: number) => void;
+  onJog: (frame: JogFrame, axis: JogAxis, delta: number) => void;
+  onPose: (pose: Pose) => void;
+  onAlignDown: () => void;
   onSave: () => void;
   onCancel: () => void;
 }) {
   const t = useTranslations('lesson');
+  const [tab, setTab] = useState<Tab>('joints');
 
   // Пределы ползунков — те же, по которым зажимается показанная поза: два
   // разбора одного URDF разошлись бы молча, и ползунок разрешил бы недоступное.
@@ -50,7 +72,36 @@ export function TeachPanel({
         {t('teach.flange')} X {flange.X} Y {flange.Y} Z {flange.Z}
       </p>
 
-      <JointPanel joints={joints} limits={limits} values={values} onChange={onChange} />
+      <div className="flex gap-1">
+        {(['joints', 'cartesian'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            data-testid={`teach-tab-${option}`}
+            aria-pressed={tab === option}
+            onClick={() => setTab(option)}
+            className={
+              tab === option
+                ? 'rounded-panel border border-brand/50 bg-brand/15 px-2 py-1 text-xs text-ink'
+                : 'rounded-panel border border-line px-2 py-1 text-xs text-ink-dim hover:text-ink'
+            }
+          >
+            {t(`teach.tab.${option}`)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'joints' ? (
+        <JointPanel joints={joints} limits={limits} values={values} onChange={onChange} />
+      ) : (
+        <CartesianPanel
+          chain={chain}
+          values={values}
+          onJog={onJog}
+          onPose={onPose}
+          onAlignDown={onAlignDown}
+        />
+      )}
 
       <div className="flex gap-2">
         <button
