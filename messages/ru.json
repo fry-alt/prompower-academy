@@ -62,7 +62,10 @@
     "minutes": "{count} мин",
     "previous": "Назад",
     "next": "Дальше",
-    "lastLesson": "Это последний урок курса"
+    "lastLesson": "Это последний урок курса",
+    "startTask": "К заданию",
+    "backToTheory": "Теория",
+    "splitLabel": "Ширина зон"
   },
   "lesson": {
     "loading": "Готовим задание…",

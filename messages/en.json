@@ -62,7 +62,10 @@
     "minutes": "{count} min",
     "previous": "Back",
     "next": "Next",
-    "lastLesson": "This is the last lesson of the course"
+    "lastLesson": "This is the last lesson of the course",
+    "startTask": "Start the task",
+    "backToTheory": "Theory",
+    "splitLabel": "Pane width"
   },
   "lesson": {
     "loading": "Preparing the task…",
