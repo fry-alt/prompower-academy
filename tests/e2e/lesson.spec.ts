@@ -80,6 +80,20 @@ test('редактор блоков открывается с программо
   await expect(page.getByTestId('program-error')).toHaveCount(0);
 });
 
+test('в узкой зоне у палитры остаются одни значки', async ({ page }) => {
+  const label = page.locator('.blocklyToolboxCategoryLabel', { hasText: 'Движение' });
+  await expect(label).toBeVisible();
+
+  // Разделитель до упора влево: там зона редактора уже, чем помещаются подписи.
+  const handle = page.getByTestId('split-handle');
+  await handle.focus();
+  for (let step = 0; step < 14; step += 1) await handle.press('ArrowLeft');
+
+  await expect(label).toBeHidden();
+  // Категория остаётся узнаваемой: значок в цвете своих блоков.
+  await expect(page.locator('.ppIconMove')).toBeVisible();
+});
+
 test('вкладка «Код» показывает готовый скрипт для робота', async ({ page }) => {
   await page.getByTestId('tab-code').click();
 

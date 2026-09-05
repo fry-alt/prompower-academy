@@ -229,7 +229,13 @@ export const BLOCK_DEFINITIONS: readonly object[] = [
   },
 ];
 
-/** Тулбокс: порядок и названия категорий с планшета. */
+/**
+ * Тулбокс: порядок и названия категорий с планшета.
+ *
+ * `cssconfig.icon` подменяет собственный класс значка Blockly: сам значок
+ * рисует оформление редактора (`components/simulator/blockly-skin.ts`). На ключ
+ * Blockly принимает ровно один класс.
+ */
 export const TOOLBOX = {
   kind: 'categoryToolbox',
   contents: [
@@ -237,6 +243,7 @@ export const TOOLBOX = {
       kind: 'category',
       name: 'Движение',
       colour: COLORS.move,
+      cssconfig: { icon: 'ppIconMove' },
       contents: [
         { kind: 'block', type: BLOCK_TYPES.moveJoint },
         { kind: 'block', type: BLOCK_TYPES.moveLinear },
@@ -247,12 +254,14 @@ export const TOOLBOX = {
       kind: 'category',
       name: 'Захват',
       colour: COLORS.io,
+      cssconfig: { icon: 'ppIconGrip' },
       contents: [{ kind: 'block', type: BLOCK_TYPES.gripper }],
     },
     {
       kind: 'category',
       name: 'Входы и выходы',
       colour: COLORS.io,
+      cssconfig: { icon: 'ppIconIo' },
       contents: [
         { kind: 'block', type: BLOCK_TYPES.setOutput },
         { kind: 'block', type: BLOCK_TYPES.waitInput },
@@ -263,6 +272,7 @@ export const TOOLBOX = {
       kind: 'category',
       name: 'Управление',
       colour: COLORS.control,
+      cssconfig: { icon: 'ppIconControl' },
       contents: [
         { kind: 'block', type: BLOCK_TYPES.wait },
         { kind: 'block', type: BLOCK_TYPES.repeat },

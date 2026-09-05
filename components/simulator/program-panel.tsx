@@ -38,18 +38,20 @@ export function ProgramPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex gap-1 border-b border-line px-2">
+      {/* Переключатели те же, что в панели показа точки: два разных вида
+          переключателей в одном экране путают. */}
+      <div className="flex gap-1 border-b border-line px-3 py-2">
         {(['blocks', 'list', 'code'] as const).map((value) => (
           <button
             key={value}
             type="button"
             data-testid={`tab-${value}`}
             onClick={() => setTab(value)}
-            aria-selected={tab === value}
+            aria-pressed={tab === value}
             className={
               tab === value
-                ? 'border-b-2 border-brand px-3 py-2 text-sm text-ink'
-                : 'border-b-2 border-transparent px-3 py-2 text-sm text-ink-faint hover:text-ink-dim'
+                ? 'rounded-panel border border-brand/50 bg-brand/15 px-2.5 py-1 text-xs text-ink'
+                : 'rounded-panel border border-line px-2.5 py-1 text-xs text-ink-dim hover:text-ink'
             }
           >
             {t(`tab.${value}`)}

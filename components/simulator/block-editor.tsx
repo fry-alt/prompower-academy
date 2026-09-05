@@ -5,6 +5,13 @@ import * as Blockly from 'blockly';
 import * as Ru from 'blockly/msg/ru';
 import { BLOCK_DEFINITIONS, TOOLBOX, toAst, type TeachFields } from '@prompower/blocks';
 import type { Program } from '@prompower/sim-core';
+import {
+  EDITOR_GRID,
+  EDITOR_THEME,
+  NARROW_CLASS,
+  NARROW_WIDTH,
+  registerSkin,
+} from './blockly-skin';
 import { registerTeachExtension, TEACH_EVENT, type TeachEventDetail } from './teach-field';
 
 /**
@@ -21,14 +28,19 @@ import { registerTeachExtension, TEACH_EVENT, type TeachEventDetail } from './te
 
 let registered = false;
 
-/** Определения блоков глобальны для Blockly: регистрируем ровно один раз. */
-function registerBlocks(): void {
+/** Определения блоков и стили глобальны для Blockly: регистрируем ровно раз. */
+function registerOnce(): void {
   if (registered) return;
   // Расширение обязано быть известно раньше блоков, которые на него ссылаются.
   registerTeachExtension();
+  // Стили — до первой инъекции: позже Blockly свой лист уже собрал.
+  registerSkin();
   Blockly.defineBlocksWithJsonArray([...BLOCK_DEFINITIONS] as never[]);
   registered = true;
 }
+
+/** Отступ программы от края холста, чтобы верхний блок не срезало. */
+const PROGRAM_MARGIN = 24;
 
 /**
  * Просьба показать роботу точку: что за блок, что в нём записано и куда вернуть
@@ -64,14 +76,14 @@ export function BlockEditor({
     const container = host.current;
     if (container === null) return;
 
-    registerBlocks();
+    registerOnce();
     Blockly.setLocale(Ru as unknown as Record<string, string>);
 
     const workspace = Blockly.inject(container, {
       toolbox: TOOLBOX,
       renderer: 'zelos',
-      theme: DARK_THEME,
-      grid: { spacing: 24, length: 3, colour: '#2a2f37', snap: true },
+      theme: EDITOR_THEME,
+      grid: EDITOR_GRID,
       zoom: { controls: true, wheel: true, startScale: 0.9, minScale: 0.4, maxScale: 1.6 },
       trashcan: true,
       move: { scrollbars: true, drag: true, wheel: true },
@@ -94,8 +106,11 @@ export function BlockEditor({
     };
     container.addEventListener(TEACH_EVENT, onTeachEvent);
 
+    nameCategories(workspace);
+
     if (initial !== undefined) {
       Blockly.serialization.workspaces.load(initial, workspace);
+      showFromCorner(workspace);
     }
 
     const publish = (): void => {
@@ -116,8 +131,12 @@ export function BlockEditor({
       publish();
     });
 
-    // Blockly не следит за размером контейнера сам.
-    const observer = new ResizeObserver(() => Blockly.svgResize(workspace));
+    // Blockly не следит за размером контейнера сам. Заодно решаем, помещаются ли
+    // подписи категорий: в узкой зоне палитра с ними съедает половину редактора.
+    const observer = new ResizeObserver(() => {
+      container.classList.toggle(NARROW_CLASS, container.clientWidth < NARROW_WIDTH);
+      Blockly.svgResize(workspace);
+    });
     observer.observe(container);
 
     return () => {
@@ -131,23 +150,38 @@ export function BlockEditor({
   return <div ref={host} className="h-full w-full" data-testid="block-editor" />;
 }
 
-/** Тёмная тема под остальной интерфейс: светлый холст рядом со сценой режет глаз. */
-const DARK_THEME = Blockly.Theme.defineTheme('prompower', {
-  name: 'prompower',
-  base: Blockly.Themes.Classic,
-  componentStyles: {
-    workspaceBackgroundColour: '#1a1d22',
-    toolboxBackgroundColour: '#20242a',
-    toolboxForegroundColour: '#d8dce2',
-    flyoutBackgroundColour: '#262b32',
-    flyoutForegroundColour: '#d8dce2',
-    flyoutOpacity: 1,
-    scrollbarColour: '#3a4048',
-    insertionMarkerColour: '#e08a3c',
-    insertionMarkerOpacity: 0.5,
-    cursorColour: '#e08a3c',
-  },
-});
+/**
+ * Подсказка с названием категории.
+ *
+ * В узкой зоне от категории остаётся один значок, и другого способа узнать её
+ * название не остаётся. Blockly своей подсказки категориям не ставит.
+ */
+function nameCategories(workspace: Blockly.WorkspaceSvg): void {
+  const toolbox = workspace.getToolbox();
+  if (!(toolbox instanceof Blockly.Toolbox)) return;
+
+  for (const item of toolbox.getToolboxItems()) {
+    if (item instanceof Blockly.ToolboxCategory) {
+      item.getDiv()?.setAttribute('title', item.getName());
+    }
+  }
+}
+
+/**
+ * Показать программу от её левого верхнего угла.
+ *
+ * Холст открывается без отступа, и верхний блок упирается в край: своего поля
+ * у Blockly для этого нет.
+ */
+function showFromCorner(workspace: Blockly.WorkspaceSvg): void {
+  const program = workspace.getBlocksBoundingBox();
+  if (program.getWidth() === 0) return;
+
+  workspace.scroll(
+    PROGRAM_MARGIN - program.left * workspace.scale,
+    PROGRAM_MARGIN - program.top * workspace.scale,
+  );
+}
 
 /** Запись показанного обратно в блок: имена без поля молча пропускаем. */
 function writeFields(block: Blockly.Block | null, fields: TeachFields): void {
