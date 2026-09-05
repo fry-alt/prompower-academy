@@ -43,12 +43,12 @@
 - Create: `lib/content.ts`
 - Create: `lib/content.test.ts`
 
-- [ ] **Step 1: Поставить next-mdx-remote**
+- [x] **Step 1: Поставить next-mdx-remote**
 
 Run: `npm install next-mdx-remote@6`
 Expected: пакет ставится; зеркало отдаёт медленно, это нормально.
 
-- [ ] **Step 2: Написать падающие тесты**
+- [x] **Step 2: Написать падающие тесты**
 
 Создать `lib/content.test.ts`:
 
@@ -96,12 +96,12 @@ describe('lessonFileFor', () => {
 });
 ```
 
-- [ ] **Step 3: Убедиться, что тесты падают**
+- [x] **Step 3: Убедиться, что тесты падают**
 
 Run: `npx vitest run lib/content.test.ts`
 Expected: FAIL — модуль `./content` не найден.
 
-- [ ] **Step 4: Написать загрузчик**
+- [x] **Step 4: Написать загрузчик**
 
 Создать `lib/content.ts`:
 
@@ -277,12 +277,12 @@ async function subdirectories(path: string): Promise<string[]> {
 }
 ```
 
-- [ ] **Step 5: Прогнать тесты**
+- [x] **Step 5: Прогнать тесты**
 
 Run: `npx vitest run lib/content.test.ts`
 Expected: PASS, 8 тестов.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add lib/content.ts lib/content.test.ts package.json package-lock.json
@@ -297,7 +297,7 @@ git commit -m "feat: уроки находятся по файловой сис�
 - Create: `content/courses/osnovy-raboty-s-kobotom/course.json`
 - Create: `content/courses/osnovy-raboty-s-kobotom/lessons/04-instrument-i-zahvat/lesson.ru.mdx`
 
-- [ ] **Step 1: Описание курса**
+- [x] **Step 1: Описание курса**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/course.json`:
 
@@ -308,7 +308,7 @@ git commit -m "feat: уроки находятся по файловой сис�
 }
 ```
 
-- [ ] **Step 2: Теория урока**
+- [x] **Step 2: Теория урока**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/04-instrument-i-zahvat/lesson.ru.mdx`:
 
@@ -370,7 +370,7 @@ minutes: 3
 серую копию робота до нужного места и сохраните — поза запомнится сама.
 ```
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add content/
@@ -385,7 +385,7 @@ git commit -m "feat: теория урока об инструменте и за
 - Modify: `messages/ru.json`
 - Modify: `messages/en.json`
 
-- [ ] **Step 1: Русские строки**
+- [x] **Step 1: Русские строки**
 
 В `messages/ru.json` удалить `lesson.title` и `lesson.description` — они теперь во фронтматтере урока. Добавить на верхнем уровне раздел карты курса:
 
@@ -401,7 +401,7 @@ git commit -m "feat: теория урока об инструменте и за
 }
 ```
 
-- [ ] **Step 2: Английские строки**
+- [x] **Step 2: Английские строки**
 
 В `messages/en.json` те же удаления и добавления:
 
@@ -417,7 +417,7 @@ git commit -m "feat: теория урока об инструменте и за
 }
 ```
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add messages/
@@ -431,7 +431,7 @@ git commit -m "feat: строки карты курса и перехода ме
 **Files:**
 - Modify: `app/[locale]/page.tsx`
 
-- [ ] **Step 1: Переписать домашнюю страницу**
+- [x] **Step 1: Переписать домашнюю страницу**
 
 Заменить содержимое `app/[locale]/page.tsx`:
 
@@ -510,12 +510,12 @@ export default async function CourseMapPage({
 
 Номер урока берётся из позиции в списке, а не из префикса папки: в курсе с одним написанным уроком «Урок 4» выглядел бы ошибкой.
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add "app/[locale]/page.tsx"
@@ -533,7 +533,7 @@ git commit -m "feat: карта курса на первой странице"
 - Modify: `app/[locale]/lesson/[id]/lesson-client.tsx`
 - Modify: `components/simulator/lesson-workspace.tsx`
 
-- [ ] **Step 1: Оформление теории**
+- [x] **Step 1: Оформление теории**
 
 Создать `components/lesson/lesson-theory.tsx`:
 
@@ -560,7 +560,7 @@ export function LessonTheory({ title, children }: { title: string; children: Rea
 }
 ```
 
-- [ ] **Step 2: Переход между уроками**
+- [x] **Step 2: Переход между уроками**
 
 Создать `components/lesson/lesson-nav.tsx`:
 
@@ -620,7 +620,7 @@ export function LessonNav({
 }
 ```
 
-- [ ] **Step 3: Страница урока через загрузчик**
+- [x] **Step 3: Страница урока через загрузчик**
 
 Заменить содержимое `app/[locale]/lesson/[id]/page.tsx`:
 
@@ -682,7 +682,7 @@ export default async function LessonPage({
 }
 ```
 
-- [ ] **Step 4: Пропустить теорию через клиентскую обёртку**
+- [x] **Step 4: Пропустить теорию через клиентскую обёртку**
 
 Заменить в `app/[locale]/lesson/[id]/lesson-client.tsx` объявление компонента:
 
@@ -722,7 +722,7 @@ import type { ReactNode } from 'react';
 import type { LessonLink } from '@/components/lesson/lesson-nav';
 ```
 
-- [ ] **Step 5: Теория и переход в левой зоне**
+- [x] **Step 5: Теория и переход в левой зоне**
 
 В `components/simulator/lesson-workspace.tsx` добавить импорт:
 
@@ -790,12 +790,12 @@ import { useMemo, useState, type ReactNode } from 'react';
 плохо. Настоящее решение — тянущиеся разделители из §9, они делаются следующей
 работой.
 
-- [ ] **Step 6: Проверить типы и тесты**
+- [x] **Step 6: Проверить типы и тесты**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck без вывода, тесты PASS.
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add components/lesson "app/[locale]/lesson" components/simulator/lesson-workspace.tsx
@@ -809,7 +809,7 @@ git commit -m "feat: теория урока и переход по курсу"
 **Files:**
 - Create: `tests/e2e/course.spec.ts`
 
-- [ ] **Step 1: Написать тесты**
+- [x] **Step 1: Написать тесты**
 
 Создать `tests/e2e/course.spec.ts`:
 
@@ -849,12 +849,12 @@ test('последний урок честно говорит, что он по�
 });
 ```
 
-- [ ] **Step 2: Прогнать**
+- [x] **Step 2: Прогнать**
 
 Run: `npx playwright test tests/e2e/course.spec.ts`
 Expected: PASS, 4 теста.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add tests/e2e/course.spec.ts
@@ -867,22 +867,22 @@ git commit -m "test: карта курса, теория и переход"
 
 **Files:** нет
 
-- [ ] **Step 1: Типы**
+- [x] **Step 1: Типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 2: Unit**
+- [x] **Step 2: Unit**
 
 Run: `npm test`
 Expected: PASS, не меньше прежних 356 плюс 8 новых.
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 Run: `npx playwright test`
 Expected: PASS, прежние 28 плюс 4 новых.
 
-- [ ] **Step 4: Проверить главное требование §7**
+- [x] **Step 4: Проверить главное требование §7**
 
 Создать папку `content/courses/osnovy-raboty-s-kobotom/lessons/05-proverka/`, а в
 ней `lesson.ru.mdx`:
