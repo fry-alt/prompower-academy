@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
 import {
   alignToolDown,
   jogPose,
@@ -48,10 +49,17 @@ export function LessonWorkspace({
   plugin,
   task,
   starter,
+  theory,
+  previous,
+  next,
 }: {
   plugin: RobotPlugin;
   task: Task;
   starter: object;
+  /** Теория собрана на сервере и приходит готовым узлом. */
+  theory: ReactNode;
+  previous: LessonLink | null;
+  next: LessonLink | null;
 }) {
   const t = useTranslations('lesson');
   const tKey = useTranslations();
@@ -78,6 +86,9 @@ export function LessonWorkspace({
       plugin={plugin}
       task={task}
       starter={starter}
+      theory={theory}
+      previous={previous}
+      next={next}
       model={model}
       chain={chain.chain}
       fps={fps}
@@ -107,6 +118,9 @@ function Workspace({
   plugin,
   task,
   starter,
+  theory,
+  previous,
+  next,
   model,
   chain,
   fps,
@@ -116,6 +130,9 @@ function Workspace({
   plugin: RobotPlugin;
   task: Task;
   starter: object;
+  theory: ReactNode;
+  previous: LessonLink | null;
+  next: LessonLink | null;
   model: Loaded;
   chain: Chain;
   fps: number;
@@ -242,7 +259,13 @@ function Workspace({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-line p-5 lg:w-72 lg:border-b-0 lg:border-r">
+        {/* Ширина поднята с 72 до 80: в 288 пикселях теория читается плохо.
+            Настоящее решение — тянущиеся разделители из §9, отдельной работой. */}
+        <aside className="flex w-full shrink-0 flex-col gap-5 overflow-y-auto border-b border-line p-5 lg:w-80 lg:border-b-0 lg:border-r">
+          {theory}
+
+          <hr className="border-line" />
+
           {teaching === null ? (
             <TaskBrief task={task} runner={runner} t={t} />
           ) : (
@@ -259,6 +282,8 @@ function Workspace({
               onCancel={() => setTeaching(null)}
             />
           )}
+
+          <LessonNav previous={previous} next={next} />
         </aside>
 
         <section className="flex min-h-0 w-full flex-col border-b border-line lg:min-w-[34rem] lg:flex-1 lg:border-b-0 lg:border-r">
