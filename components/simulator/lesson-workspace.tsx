@@ -287,6 +287,14 @@ function Workspace({
             )}
           </RobotViewer>
 
+          {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. Делается
+              наложением поверх холста, а не в сцене — шейдер ради неё писать
+              незачем, а пакет постобработки мы не подключаем. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
+          />
+
           <p
             data-testid="scene-stats"
             className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"

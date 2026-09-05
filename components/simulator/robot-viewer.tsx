@@ -8,8 +8,10 @@ import type { SceneDefaults } from '@prompower/sim-core';
 import type { RobotBounds } from './fit-robot';
 import { FrameRateProbe } from './frame-rate-probe';
 import { applyJointValues } from './pose-robot';
+import { SceneLighting } from './scene-lighting';
 
-const SURFACE = '#14161a';
+/** Холоднее нейтрального: серый робот на сером фоне сливается, на синеватом — нет. */
+const SURFACE = '#101319';
 const TABLE_TOP = '#343941';
 const GRID_CELL = '#2f343c';
 const GRID_SECTION = '#454c57';
@@ -61,17 +63,7 @@ export function RobotViewer({
       <color attach="background" args={[SURFACE]} />
       <fog attach="fog" args={[SURFACE, distance * 2, distance * 6]} />
 
-      <hemisphereLight args={['#8a93a5', '#1a1d22', 0.7]} />
-      <directionalLight
-        position={[distance, distance * 1.4, distance * 0.6]}
-        intensity={1.6}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-2}
-        shadow-camera-right={2}
-        shadow-camera-top={2}
-        shadow-camera-bottom={-2}
-      />
+      <SceneLighting radius={bounds.radius} />
 
       <primitive object={robot} />
 
@@ -117,7 +109,9 @@ function WorkTable({ size, height }: { size: readonly [number, number]; height: 
     <group>
       <mesh position={[0, -TABLE_THICKNESS / 2, 0]} receiveShadow castShadow>
         <boxGeometry args={[width, TABLE_THICKNESS, depth]} />
-        <meshStandardMaterial color={TABLE_TOP} roughness={0.85} metalness={0.05} />
+        {/* Сталь, а не матовый пластик: теперь есть среда, и в столешнице
+            появляется отражение робота. */}
+        <meshStandardMaterial color={TABLE_TOP} roughness={0.28} metalness={0.65} />
       </mesh>
 
       {([
