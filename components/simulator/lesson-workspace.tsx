@@ -2,8 +2,11 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { LessonHeader } from '@/components/lesson/lesson-header';
 import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
+import { TaskOnDesktop } from '@/components/lesson/task-on-desktop';
 import { TheoryView } from '@/components/lesson/theory-view';
+import { useWideEnough } from '@/components/lesson/use-wide-enough';
 import {
   alignToolDown,
   earnedHints,
@@ -48,15 +51,7 @@ import { includeScene } from './fit-robot';
  */
 const EMPTY: Program = { version: 1, body: [] };
 
-export function LessonWorkspace({
-  plugin,
-  task,
-  starter,
-  title,
-  theory,
-  previous,
-  next,
-}: {
+interface LessonProps {
   plugin: RobotPlugin;
   task: Task;
   starter: object;
@@ -66,7 +61,44 @@ export function LessonWorkspace({
   theory: ReactNode;
   previous: LessonLink | null;
   next: LessonLink | null;
-}) {
+}
+
+/**
+ * Урок целиком. Ширина окна решает, что вообще собирать.
+ *
+ * Развилка сделана компонентами, а не веткой в разметке, ради загрузок: на
+ * телефоне блочный редактор бесполезен (§9 брифа), и туда не должны уезжать ни
+ * модель робота, ни сцена. Ветка внутри одного компонента их бы всё равно
+ * запросила — хуки грузят по монтированию, а не по показу.
+ */
+export function LessonWorkspace(props: LessonProps) {
+  return useWideEnough() ? <WideLesson {...props} /> : <NarrowLesson {...props} />;
+}
+
+/** Урок на телефоне: теория читается, задание честно отсылает к компьютеру. */
+function NarrowLesson({ plugin, title, theory, previous, next }: LessonProps) {
+  const tKey = useTranslations();
+  const [reading, setReading] = useState(true);
+
+  return (
+    <div className="flex h-dvh flex-col bg-surface-0 text-ink">
+      <LessonHeader title={title} model={tKey(plugin.displayNameKey)} />
+
+      {reading ? (
+        <>
+          <TheoryView onStart={() => setReading(false)}>{theory}</TheoryView>
+          <div className="border-t border-line px-5 py-3">
+            <LessonNav previous={previous} next={next} />
+          </div>
+        </>
+      ) : (
+        <TaskOnDesktop onBack={() => setReading(true)} />
+      )}
+    </div>
+  );
+}
+
+function WideLesson({ plugin, task, starter, title, theory, previous, next }: LessonProps) {
   const t = useTranslations('lesson');
   const tKey = useTranslations();
   const [fps, setFps] = useState(0);
@@ -249,13 +281,7 @@ function Workspace({
 
   return (
     <div className="flex h-dvh flex-col bg-surface-0 text-ink">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
-        <div className="flex flex-wrap items-baseline gap-x-3">
-          {/* Заголовок из содержания, а не из переводов: у каждого урока свой. */}
-          <h1 className="text-base font-medium">{title}</h1>
-          <p className="text-sm text-ink-dim">{tKey(plugin.displayNameKey)}</p>
-        </div>
-
+      <LessonHeader title={title} model={tKey(plugin.displayNameKey)}>
         {!reading && (
           <div className="flex items-center gap-3">
             <button
@@ -279,7 +305,7 @@ function Workspace({
             />
           </div>
         )}
-      </header>
+      </LessonHeader>
 
       {plugin.placeholderNoticeKey !== null && (
         <p role="status" className="border-b border-line bg-surface-1 px-5 py-2 text-sm text-warn">

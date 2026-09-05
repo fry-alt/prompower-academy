@@ -75,6 +75,25 @@ test('разделитель меняет ширину зон', async ({ page })
     .toBeGreaterThan(before);
 });
 
+test.describe('телефон', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('теория читается, а задание отсылает к компьютеру', async ({ page }) => {
+    await page.goto('/ru/lesson/instrument-i-zahvat');
+    await expect(page.getByRole('heading', { name: 'Инструмент и захват' })).toBeVisible();
+
+    await page.getByTestId('theory-start').click();
+    await expect(page.getByTestId('desktop-only')).toBeVisible();
+
+    // Ни сцены, ни редактора: на телефоне они бесполезны, и грузить их незачем.
+    await expect(page.locator('canvas')).toHaveCount(0);
+    await expect(page.getByTestId('block-editor')).toHaveCount(0);
+
+    await page.getByTestId('desktop-only-back').click();
+    await expect(page.getByTestId('theory-start')).toBeVisible();
+  });
+});
+
 test('на экране урока нет незакрытых ключей перевода', async ({ page }) => {
   // Ключ `lesson.title` однажды остался в шапке после переноса заголовков в
   // содержание, и ни один тест этого не заметил.
