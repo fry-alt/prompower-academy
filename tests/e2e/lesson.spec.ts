@@ -231,3 +231,42 @@ test('перпендикуляр набирается кнопкой и сохр
   await page.getByTestId('play').click();
   await expect(page.getByTestId('verdict')).toBeVisible({ timeout: 60_000 });
 });
+
+test('удержание кнопки двигает дальше одного шага', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.getByTestId('teach-tab-cartesian').click();
+  await page.getByTestId('step-1').click();
+
+  const before = Number(await page.getByTestId('axis-Z').inputValue());
+
+  // Щелчок для сравнения: ровно один шаг.
+  await page.getByTestId('jog-z-plus').click();
+  const afterTap = Number(await page.getByTestId('axis-Z').inputValue());
+
+  // Удержание: порог 250 мс плюс восемь шагов в секунду.
+  await page.getByTestId('jog-z-plus').hover();
+  await page.mouse.down();
+  await page.waitForTimeout(1200);
+  await page.mouse.up();
+
+  const afterHold = Number(await page.getByTestId('axis-Z').inputValue());
+
+  expect(afterTap - before).toBeGreaterThan(0);
+  expect(afterHold - afterTap).toBeGreaterThan(afterTap - before);
+});
+
+test('отпускание кнопки останавливает движение', async ({ page }) => {
+  await page.locator(FIRST_MOVE_TEACH).last().click();
+  await page.getByTestId('teach-tab-cartesian').click();
+  await page.getByTestId('step-1').click();
+
+  await page.getByTestId('jog-z-plus').hover();
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+
+  const atRelease = Number(await page.getByTestId('axis-Z').inputValue());
+  await page.waitForTimeout(700);
+
+  expect(Number(await page.getByTestId('axis-Z').inputValue())).toBe(atRelease);
+});
