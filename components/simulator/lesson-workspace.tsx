@@ -6,6 +6,7 @@ import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
 import { TheoryView } from '@/components/lesson/theory-view';
 import {
   alignToolDown,
+  earnedHints,
   jogPose,
   jogToPose,
   type JogAxis,
@@ -412,7 +413,50 @@ function TaskBrief({
       </section>
 
       <Verdict runner={runner} t={t} />
+      <Hints task={task} failedAttempts={runner.failedAttempts} t={t} />
     </>
+  );
+}
+
+/**
+ * Лестница подсказок урока.
+ *
+ * Ступени открываются неудачными попытками и остаются на экране: открывшаяся
+ * вторая подсказка не отменяет первую. Пока ни одна не заслужена, раздела нет —
+ * обещание «здесь появятся подсказки» ученику ничего не даёт.
+ */
+function Hints({
+  task,
+  failedAttempts,
+  t,
+}: {
+  task: Task;
+  failedAttempts: number;
+  t: ReturnType<typeof useTranslations<'lesson'>>;
+}) {
+  const hints = earnedHints(task, failedAttempts);
+  if (hints.length === 0) return null;
+
+  return (
+    <section data-testid="hints" className="mt-4">
+      <h2 className="mb-2 text-sm font-medium">{t('hints.title')}</h2>
+
+      <ol className="flex flex-col gap-2">
+        {hints.map((hint) => (
+          <li
+            key={hint.afterFailedAttempts}
+            data-testid="hint"
+            className="rounded-panel border-l-2 border-brand/60 bg-surface-1 p-3 text-sm text-ink-dim"
+          >
+            {hint.text}
+          </li>
+        ))}
+      </ol>
+
+      {hints.length < task.hints.length && (
+        <p className="mt-2 text-xs text-ink-faint">{t('hints.next')}</p>
+      )}
+    </section>
   );
 }
 

@@ -96,6 +96,10 @@
       "alignDownNote": "A training button. On an industrial pendant you set orientation by hand or through a coordinate system."
     },
     "program": "Program",
+    "hints": {
+      "title": "Hints",
+      "next": "The next hint opens after one more failed attempt."
+    },
     "passed": "Task complete.",
     "failed": "Task not complete:",
     "goal": {

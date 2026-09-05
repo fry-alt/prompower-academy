@@ -1,7 +1,7 @@
 import type { Program, Statement } from '../program/ast';
 import type { EventLog, WorldState } from '../world/state';
 import { zoneContaining } from '../world/aabb';
-import type { Constraint, Goal, Task } from './task';
+import type { Constraint, Goal, Hint, Task } from './task';
 
 /**
  * Автопроверка задания.
@@ -115,11 +115,14 @@ function countStatements(body: readonly Statement[]): number {
   return count;
 }
 
-/** Подсказка, заслуженная числом неудачных попыток. Самая подробная из подходящих. */
-export function hintFor(task: Task, failedAttempts: number): string | null {
-  const earned = task.hints
+/**
+ * Подсказки, заслуженные числом неудачных попыток, от ранней к поздней.
+ *
+ * Отдаётся вся лестница, а не последняя ступень: открывшаяся вторая подсказка
+ * не отменяет первую, и ученику нужны обе сразу.
+ */
+export function earnedHints(task: Task, failedAttempts: number): readonly Hint[] {
+  return task.hints
     .filter((hint) => hint.afterFailedAttempts <= failedAttempts)
     .sort((a, b) => a.afterFailedAttempts - b.afterFailedAttempts);
-
-  return earned[earned.length - 1]?.text ?? null;
 }

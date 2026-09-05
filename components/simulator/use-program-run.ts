@@ -44,6 +44,8 @@ export interface ProgramRun {
   readonly speed: number;
   /** Результат автопроверки. Появляется, когда программа доработала. */
   readonly check: CheckResult | null;
+  /** Сколько раз программа доработала, не пройдя проверку. По ним открываются подсказки. */
+  readonly failedAttempts: number;
   readonly play: () => void;
   readonly pause: () => void;
   readonly stepOnce: () => void;
@@ -175,6 +177,25 @@ export function useProgramRun(
     [run.status, run.world, run.log, task, program],
   );
 
+  /**
+   * Неудачные попытки: по ним открываются подсказки урока.
+   *
+   * Считается доработавшая программа, не прошедшая проверку, а не нажатие
+   * «запуск»: до конца доходят и шагами. Один прогон считается один раз —
+   * отсюда сравнение по объекту состояния. Перезапуск счётчик не трогает:
+   * между попытками программу как раз и правят.
+   */
+  const counted = useRef<RunState | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+
+  useEffect(() => {
+    if (status !== 'done' || check === null || check.passed) return;
+    if (counted.current === run) return;
+
+    counted.current = run;
+    setFailedAttempts((count) => count + 1);
+  }, [status, check, run]);
+
   return {
     run,
     objects,
@@ -182,6 +203,7 @@ export function useProgramRun(
     status,
     speed,
     check,
+    failedAttempts,
     play: useCallback(() => {
       if (runRef.current.status === 'running') setStatus('playing');
     }, []),

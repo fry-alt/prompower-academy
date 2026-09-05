@@ -43,7 +43,7 @@ export { createPlanner, type PlannerOptions } from './interpreter/planner';
 
 export { distanceToObject, nearestGraspable } from './world/grasp';
 
-export { checkTask, hintFor, type CheckResult } from './validators/check';
+export { checkTask, earnedHints, type CheckResult } from './validators/check';
 
 export {
   parseTask,

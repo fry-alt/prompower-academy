@@ -61,6 +61,39 @@ test('сброс возвращает программу в начало', async
   await expect(page.getByTestId('verdict')).toHaveCount(0);
 });
 
+test('после двух неудачных попыток открывается подсказка', async ({ page }) => {
+  await expect(page.getByTestId('hints')).toHaveCount(0);
+
+  // Стартовая программа урока задание проходит, поэтому её сносим целиком:
+  // пустая программа доигрывает мгновенно и проверку не проходит, так две
+  // неудачные попытки набираются за секунды, а не за два полных прогона.
+  page.on('dialog', (dialog) => void dialog.accept());
+
+  const editor = await page.getByTestId('block-editor').boundingBox();
+  // Меню холста, а не блока: удалить всё разом предлагает только оно. Пустое
+  // место ищем правее первого блока — он в программе самый короткий.
+  const first = await page.locator('.pp_set_speed > .blocklyPath').first().boundingBox();
+  if (editor === null || first === null) throw new Error('редактор не измерился');
+
+  await page.locator('[data-testid="block-editor"] svg.blocklySvg').click({
+    button: 'right',
+    position: {
+      x: first.x - editor.x + first.width + 40,
+      y: first.y - editor.y + first.height / 2,
+    },
+  });
+  await page.getByText(/Удалить \d+ блоков/).click();
+
+  await page.getByTestId('play').click();
+  await expect(page.getByTestId('verdict')).toContainText('Задание не выполнено');
+  await expect(page.getByTestId('hints')).toHaveCount(0);
+
+  await page.getByTestId('reset').click();
+  await page.getByTestId('play').click();
+
+  await expect(page.getByTestId('hint')).toContainText('Подходите к детали сверху');
+});
+
 test('скорость переключается и прогон всё равно доходит до конца', async ({ page }) => {
   await page.getByTestId('speed').selectOption('4');
   await page.getByTestId('play').click();

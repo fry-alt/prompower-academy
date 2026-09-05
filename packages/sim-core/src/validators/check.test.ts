@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Program } from '../program/ast';
 import { createWorld, graspObject, moveObject, releaseObject } from '../world/state';
-import { checkTask, hintFor } from './check';
+import { checkTask, earnedHints } from './check';
 import { parseTask, type Task } from './task';
 
 const ZERO = { x: 0, y: 0, z: 0 };
 
-const TASK: Task = parseTask({
+const RAW_TASK = {
   id: 'pick-and-place-basic',
   world: {
     objects: [{ id: 'cube-1', position: { x: 0.3, y: 0.02, z: 0 }, size: { x: 0.04, y: 0.04, z: 0.04 } }],
@@ -24,7 +24,9 @@ const TASK: Task = parseTask({
     { afterFailedAttempts: 2, text: 'Подойдите к детали сверху.' },
     { afterFailedAttempts: 4, text: 'Не забудьте открыть захват над зоной B.' },
   ],
-});
+};
+
+const TASK: Task = parseTask(RAW_TASK);
 
 function world() {
   return createWorld({
@@ -138,16 +140,31 @@ describe('ограничение на размер программы', () => {
   });
 });
 
-describe('hintFor', () => {
+describe('earnedHints', () => {
   it('до первой заслуженной подсказки молчит', () => {
-    expect(hintFor(TASK, 1)).toBeNull();
+    expect(earnedHints(TASK, 1)).toEqual([]);
   });
 
-  it('выдаёт подсказку по числу неудач', () => {
-    expect(hintFor(TASK, 2)).toBe('Подойдите к детали сверху.');
+  it('открывает подсказку по числу неудач', () => {
+    expect(earnedHints(TASK, 2).map((hint) => hint.text)).toEqual(['Подойдите к детали сверху.']);
   });
 
-  it('с ростом неудач выдаёт более подробную', () => {
-    expect(hintFor(TASK, 5)).toBe('Не забудьте открыть захват над зоной B.');
+  it('с ростом неудач копит лестницу, а не подменяет её', () => {
+    expect(earnedHints(TASK, 5).map((hint) => hint.text)).toEqual([
+      'Подойдите к детали сверху.',
+      'Не забудьте открыть захват над зоной B.',
+    ]);
+  });
+
+  it('выдаёт подсказки по возрастанию порога, а не в порядке записи', () => {
+    const shuffled = parseTask({
+      ...RAW_TASK,
+      hints: [
+        { afterFailedAttempts: 4, text: 'вторая' },
+        { afterFailedAttempts: 2, text: 'первая' },
+      ],
+    });
+
+    expect(earnedHints(shuffled, 4).map((hint) => hint.text)).toEqual(['первая', 'вторая']);
   });
 });
