@@ -44,7 +44,8 @@ export function TeachPanel({
   /** Что стало с записанной точкой: об этом надо сказать человеку. */
   note: TeachNote;
   onChange: (index: number, radians: number) => void;
-  onJog: (frame: JogFrame, axis: JogAxis, delta: number) => void;
+  /** Возвращает false, если дальше не достаём: удержание на этом встаёт. */
+  onJog: (frame: JogFrame, axis: JogAxis, delta: number) => boolean;
   onPose: (pose: Pose) => void;
   onAlignDown: () => void;
   onSave: () => void;

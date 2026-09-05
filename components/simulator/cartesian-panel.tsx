@@ -4,6 +4,7 @@ import { useState, type KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { fieldsFromJoints } from '@prompower/blocks';
 import type { JogAxis, JogFrame, KinematicChain, Pose } from '@prompower/sim-core';
+import { useHoldJog, type HoldHandlers } from './use-hold-jog';
 
 /**
  * Ручное управление в декартовых координатах: подвод кнопками и точный ввод.
@@ -44,13 +45,15 @@ export function CartesianPanel({
 }: {
   chain: KinematicChain;
   values: readonly number[];
-  onJog: (frame: JogFrame, axis: JogAxis, delta: number) => void;
+  /** Возвращает false, если дальше не достаём: удержание на этом встаёт. */
+  onJog: (frame: JogFrame, axis: JogAxis, delta: number) => boolean;
   onPose: (pose: Pose) => void;
   onAlignDown: () => void;
 }) {
   const t = useTranslations('lesson');
   const [frame, setFrame] = useState<JogFrame>('world');
   const [step, setStep] = useState(DEFAULT_STEP);
+  const hold = useHoldJog();
 
   // Ровно те числа, что уедут в блок по «Сохранить»: считать их здесь отдельно
   // значило бы показывать одно, а записывать другое.
@@ -121,14 +124,12 @@ export function CartesianPanel({
           <li key={axis} className="flex items-center gap-2">
             <span className="w-7 font-mono text-xs text-ink-dim">{fieldOf(axis)}</span>
 
-            <button
-              type="button"
-              data-testid={`jog-${axis}-minus`}
-              onClick={() => onJog(frame, axis, -delta)}
-              className="rounded-panel border border-line px-2 py-1 font-mono text-xs text-ink-dim hover:text-ink"
-            >
-              −
-            </button>
+            <JogButton
+              id={`jog-${axis}-minus`}
+              held={hold.held === `jog-${axis}-minus`}
+              handlers={hold.bind(`jog-${axis}-minus`, () => onJog(frame, axis, -delta))}
+              label="−"
+            />
 
             {/*
               Поле не управляемое: значение уезжает в робота по Enter или по
@@ -146,14 +147,12 @@ export function CartesianPanel({
               className="w-20 rounded-panel border border-line bg-transparent px-2 py-1 text-right font-mono text-xs tabular-nums text-ink"
             />
 
-            <button
-              type="button"
-              data-testid={`jog-${axis}-plus`}
-              onClick={() => onJog(frame, axis, delta)}
-              className="rounded-panel border border-line px-2 py-1 font-mono text-xs text-ink-dim hover:text-ink"
-            >
-              +
-            </button>
+            <JogButton
+              id={`jog-${axis}-plus`}
+              held={hold.held === `jog-${axis}-plus`}
+              handlers={hold.bind(`jog-${axis}-plus`, () => onJog(frame, axis, delta))}
+              label="+"
+            />
 
             <span className="text-xs text-ink-faint">{unit}</span>
           </li>
@@ -172,6 +171,40 @@ export function CartesianPanel({
         <p className="text-xs text-ink-faint">{t('teach.alignDownNote')}</p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Кнопка подвода: круглая, крупная, с явным состоянием удержания.
+ *
+ * `touch-none` обязателен — иначе на планшете жест прокрутки перехватит
+ * удержание и робот поедет вместе со страницей.
+ */
+function JogButton({
+  id,
+  held,
+  handlers,
+  label,
+}: {
+  id: string;
+  held: boolean;
+  handlers: HoldHandlers;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={id}
+      aria-label={label}
+      className={`flex h-8 w-8 shrink-0 touch-none select-none items-center justify-center rounded-full border font-mono text-sm transition-colors ${
+        held
+          ? 'border-brand bg-brand/25 text-ink'
+          : 'border-line text-ink-dim hover:bg-surface-2 hover:text-ink'
+      }`}
+      {...handlers}
+    >
+      {label}
+    </button>
   );
 }
 

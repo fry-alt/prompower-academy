@@ -22,6 +22,7 @@ import {
   type TeachKind,
 } from '@prompower/blocks';
 import { BaseTriad, FlangeTriad } from './axes-triad';
+import { useAnimatedJoints } from './use-animated-joints';
 import type { TeachRequest } from './block-editor';
 import { GhostRobot } from './ghost-robot';
 import { ProgramPanel } from './program-panel';
@@ -136,6 +137,11 @@ function Workspace({
 
   const [teaching, setTeaching] = useState<Teaching | null>(null);
 
+  // Копия едет к целевой позе, а панель показывает саму цель: числовые поля
+  // неуправляемые и перемонтируются по `key`, так что шестьдесят обновлений в
+  // секунду сделали бы их непечатаемыми.
+  const shownJoints = useAnimatedJoints(teaching?.joints ?? null);
+
   const startTeaching = (request: TeachRequest): void => {
     const kind = teachKindOf(request.blockType);
     if (kind === null) return;
@@ -171,21 +177,27 @@ function Workspace({
    * Общая часть подвода: удавшийся шаг ложится в позу, неудавшийся оставляет
    * копию на месте и меняет только оговорку.
    */
-  const applyJog = (compute: (joints: readonly number[]) => JogResult): void => {
-    setTeaching((current) => {
-      if (current === null) return null;
+  const applyJog = (compute: (joints: readonly number[]) => JogResult): boolean => {
+    if (teaching === null) return false;
 
-      const result = compute(current.joints);
-      // Копия уже там, куда её привели: прежняя оговорка с этого момента неверна.
-      return result.ok
-        ? { ...current, joints: result.joints, note: 'ok' }
-        : { ...current, note: 'blocked' };
-    });
+    const result = compute(teaching.joints);
+    // Копия уже там, куда её привели: прежняя оговорка с этого момента неверна.
+    setTeaching(
+      result.ok
+        ? { ...teaching, joints: result.joints, note: 'ok' }
+        : { ...teaching, note: 'blocked' },
+    );
+
+    return result.ok;
   };
 
-  const jogTeaching = (frame: JogFrame, axis: JogAxis, delta: number): void => {
+  /**
+   * Обновляющая функция здесь не годится: удержанию надо знать прямо сейчас,
+   * удался ли шаг, а изнутри неё исход не вернуть. Замыкание при этом свежее —
+   * хук удержания зовёт то, что пришло последним рендером.
+   */
+  const jogTeaching = (frame: JogFrame, axis: JogAxis, delta: number): boolean =>
     applyJog((joints) => jogPose(chain, joints, frame, axis, delta));
-  };
 
   const poseTeaching = (pose: Pose): void => {
     applyJog((joints) => jogToPose(chain, joints, pose));
@@ -275,13 +287,13 @@ function Workspace({
               heldId={runner.run.world.grasped}
             />
 
-            {teaching !== null && (
+            {teaching !== null && shownJoints !== null && (
               <>
-                <GhostRobot source={model.robot} jointNames={jointNames} values={teaching.joints} />
+                <GhostRobot source={model.robot} jointNames={jointNames} values={shownJoints} />
                 {/* Оси в долях габарита: у Zu 3 и Zu 20 разный масштаб, и стрелка
                     в фиксированных сантиметрах у одного потеряется, у другого
                     закроет сцену. */}
-                <FlangeTriad chain={chain} values={teaching.joints} size={bounds.radius * 0.25} />
+                <FlangeTriad chain={chain} values={shownJoints} size={bounds.radius * 0.25} />
                 <BaseTriad size={bounds.radius * 0.25} />
               </>
             )}
