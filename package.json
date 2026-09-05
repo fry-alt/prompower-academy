@@ -30,6 +30,7 @@
     "blockly": "^12.5.1",
     "next": "15.5.25",
     "next-intl": "4.14.2",
+    "next-mdx-remote": "^6.0.0",
     "react": "19.1.9",
     "react-dom": "19.1.9",
     "three": "0.185.1",

@@ -16,6 +16,7 @@ export default defineConfig({
     include: [
       'packages/**/*.test.ts',
       'components/**/*.test.ts',
+      'lib/**/*.test.ts',
       'scripts/**/*.test.ts',
       // Сквозные прогоны «задание из каталога курсов на настоящей модели».
       'tests/sim/**/*.test.ts',
