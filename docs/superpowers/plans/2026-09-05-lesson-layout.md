@@ -38,7 +38,7 @@
 **Files:**
 - Create: `components/simulator/split-pane.tsx`
 
-- [ ] **Step 1: Написать компонент**
+- [x] **Step 1: Написать компонент**
 
 Создать `components/simulator/split-pane.tsx`:
 
@@ -156,12 +156,12 @@ export function SplitPane({
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/split-pane.tsx
@@ -176,7 +176,7 @@ git commit -m "feat: тянущийся разделитель зон"
 - Create: `components/lesson/theory-view.tsx`
 - Modify: `messages/ru.json`, `messages/en.json`
 
-- [ ] **Step 1: Экран теории**
+- [x] **Step 1: Экран теории**
 
 Создать `components/lesson/theory-view.tsx`:
 
@@ -214,7 +214,7 @@ export function TheoryView({ children, onStart }: { children: ReactNode; onStart
 }
 ```
 
-- [ ] **Step 2: Русские строки**
+- [x] **Step 2: Русские строки**
 
 В `messages/ru.json` в раздел `course` добавить:
 
@@ -223,7 +223,7 @@ export function TheoryView({ children, onStart }: { children: ReactNode; onStart
     "backToTheory": "Теория",
 ```
 
-- [ ] **Step 3: Английские строки**
+- [x] **Step 3: Английские строки**
 
 В `messages/en.json` в раздел `course` добавить:
 
@@ -232,7 +232,7 @@ export function TheoryView({ children, onStart }: { children: ReactNode; onStart
     "backToTheory": "Theory",
 ```
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add components/lesson/theory-view.tsx messages/
@@ -248,7 +248,7 @@ git commit -m "feat: экран теории с переходом к задан
 - Modify: `app/[locale]/lesson/[id]/page.tsx`
 - Modify: `app/[locale]/lesson/[id]/lesson-client.tsx`
 
-- [ ] **Step 1: Заголовок строкой со страницы**
+- [x] **Step 1: Заголовок строкой со страницы**
 
 В `app/[locale]/lesson/[id]/page.tsx` добавить проп в вызов `LessonClient`:
 
@@ -258,7 +258,7 @@ git commit -m "feat: экран теории с переходом к задан
 
 В `app/[locale]/lesson/[id]/lesson-client.tsx` добавить `title: string;` в тип пропсов, принять его в аргументах и передать дальше в `LessonWorkspace` тем же именем.
 
-- [ ] **Step 2: Пропсы и состояние этапа**
+- [x] **Step 2: Пропсы и состояние этапа**
 
 В `components/simulator/lesson-workspace.tsx` добавить импорты:
 
@@ -283,7 +283,7 @@ import { SplitPane } from './split-pane';
   const [reading, setReading] = useState(true);
 ```
 
-- [ ] **Step 3: Новая разметка**
+- [x] **Step 3: Новая разметка**
 
 Заменить в `Workspace` всё от `<header` до закрывающего `</div>` внешнего контейнера на:
 
@@ -385,17 +385,17 @@ import { SplitPane } from './split-pane';
 Пропсы `ProgramPanel` брать из нынешней разметки без изменений: перенос не должен
 менять её поведение.
 
-- [ ] **Step 4: Подпись разделителя**
+- [x] **Step 4: Подпись разделителя**
 
 В `messages/ru.json` в `course` добавить `"splitLabel": "Ширина зон"`, в
 `messages/en.json` — `"splitLabel": "Pane width"`.
 
-- [ ] **Step 5: Проверить типы и тесты**
+- [x] **Step 5: Проверить типы и тесты**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck без вывода, тесты PASS.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add components/simulator/lesson-workspace.tsx "app/[locale]/lesson" messages/
@@ -409,7 +409,7 @@ git commit -m "feat: теория как этап, задание в двух з
 **Files:**
 - Modify: `tests/e2e/lesson.spec.ts`
 
-- [ ] **Step 1: Поправить существующие тесты**
+- [x] **Step 1: Поправить существующие тесты**
 
 Все тесты урока работают с блоками и сценой, а на экране теории их нет. Клик
 должен идти **строго между переходом и ожиданиями**: иначе `beforeEach` будет
@@ -427,7 +427,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('main canvas')).toBeVisible();
 ```
 
-- [ ] **Step 2: Добавить тесты этапов и разделителя**
+- [x] **Step 2: Добавить тесты этапов и разделителя**
 
 Дописать в конец `tests/e2e/course.spec.ts`, а не файла урока: там нет
 `beforeEach`, который уводит с теории, и эти тесты не будут ходить по странице
@@ -483,12 +483,12 @@ test('на экране урока нет незакрытых ключей пе
 });
 ```
 
-- [ ] **Step 3: Прогнать**
+- [x] **Step 3: Прогнать**
 
 Run: `npx playwright test tests/e2e/lesson.spec.ts tests/e2e/course.spec.ts`
 Expected: PASS — 20 в файле урока и 8 в файле курса.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add tests/e2e/lesson.spec.ts tests/e2e/course.spec.ts
@@ -501,17 +501,17 @@ git commit -m "test: этапы урока, разделитель и защит
 
 **Files:** нет
 
-- [ ] **Step 1: Типы**
+- [x] **Step 1: Типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 2: Unit**
+- [x] **Step 2: Unit**
 
 Run: `npm test`
 Expected: PASS, 363 теста.
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 Run: `npx playwright test`
 Expected: PASS. Файл урока медленный; при падении по таймауту прогнать его
