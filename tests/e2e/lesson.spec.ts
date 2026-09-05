@@ -12,6 +12,8 @@ const LESSON = '/ru/lesson/instrument-i-zahvat';
 
 test.beforeEach(async ({ page }) => {
   await page.goto(LESSON);
+  // Урок открывается теорией: до перехода к заданию холстов на странице нет.
+  await page.getByTestId('theory-start').click();
   // Именно сцена: Blockly держит свой скрытый canvas для замера текста, и
   // селектор без уточнения находит оба.
   await expect(page.locator('main canvas')).toBeVisible();
@@ -168,8 +170,11 @@ test('точка, показанная заново, не ломает зада�
 
   await page.getByTestId('play').click();
 
+  // Полторы минуты, а не одна: сам по себе этот тест идёт около 1.1 минуты, и
+  // шестидесяти секунд ему не хватало уже в одиночку. В длинном прогоне он от
+  // этого падал через раз — не от поломки, а от недооценённого бюджета.
   await expect(page.getByTestId('verdict')).toContainText('Задание выполнено', {
-    timeout: 60_000,
+    timeout: 90_000,
   });
 });
 

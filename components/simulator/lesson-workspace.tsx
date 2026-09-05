@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
+import { TheoryView } from '@/components/lesson/theory-view';
 import {
   alignToolDown,
   jogPose,
@@ -29,6 +30,7 @@ import { GhostRobot } from './ghost-robot';
 import { ProgramPanel } from './program-panel';
 import { TeachPanel, type TeachNote } from './teach-panel';
 import { RobotViewer } from './robot-viewer';
+import { SplitPane } from './split-pane';
 import { RunControls } from './run-controls';
 import { SceneObjects } from './scene-objects';
 import { useProgramRun } from './use-program-run';
@@ -49,6 +51,7 @@ export function LessonWorkspace({
   plugin,
   task,
   starter,
+  title,
   theory,
   previous,
   next,
@@ -56,6 +59,8 @@ export function LessonWorkspace({
   plugin: RobotPlugin;
   task: Task;
   starter: object;
+  /** Заголовок урока из содержания: шапке нужна строка, а не готовый узел. */
+  title: string;
   /** Теория собрана на сервере и приходит готовым узлом. */
   theory: ReactNode;
   previous: LessonLink | null;
@@ -86,6 +91,7 @@ export function LessonWorkspace({
       plugin={plugin}
       task={task}
       starter={starter}
+      title={title}
       theory={theory}
       previous={previous}
       next={next}
@@ -118,6 +124,7 @@ function Workspace({
   plugin,
   task,
   starter,
+  title,
   theory,
   previous,
   next,
@@ -130,6 +137,7 @@ function Workspace({
   plugin: RobotPlugin;
   task: Task;
   starter: object;
+  title: string;
   theory: ReactNode;
   previous: LessonLink | null;
   next: LessonLink | null;
@@ -140,6 +148,11 @@ function Workspace({
   labels: { t: ReturnType<typeof useTranslations<'lesson'>>; tKey: ReturnType<typeof useTranslations> };
 }) {
   const { t, tKey } = labels;
+  const tCourse = useTranslations('course');
+
+  // Теория — этап урока, а не колонка. §7 задаёт порядок «теория → задание»,
+  // и держать их одновременно значит не дать места ни тому, ни другому.
+  const [reading, setReading] = useState(true);
 
   // Программа приходит из редактора блоков и меняется по ходу сборки.
   const [program, setProgram] = useState<Program>(EMPTY);
@@ -236,20 +249,35 @@ function Workspace({
   return (
     <div className="flex h-dvh flex-col bg-surface-0 text-ink">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
-        <div>
-          <h1 className="text-base font-medium">{t('title')}</h1>
+        <div className="flex flex-wrap items-baseline gap-x-3">
+          {/* Заголовок из содержания, а не из переводов: у каждого урока свой. */}
+          <h1 className="text-base font-medium">{title}</h1>
           <p className="text-sm text-ink-dim">{tKey(plugin.displayNameKey)}</p>
         </div>
-        <RunControls
-          locked={teaching !== null}
-          status={runner.status}
-          speed={runner.speed}
-          onPlay={runner.play}
-          onPause={runner.pause}
-          onStep={runner.stepOnce}
-          onReset={runner.reset}
-          onSpeed={runner.setSpeed}
-        />
+
+        {!reading && (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              data-testid="back-to-theory"
+              onClick={() => setReading(true)}
+              className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
+            >
+              {tCourse('backToTheory')}
+            </button>
+
+            <RunControls
+              locked={teaching !== null}
+              status={runner.status}
+              speed={runner.speed}
+              onPlay={runner.play}
+              onPause={runner.pause}
+              onStep={runner.stepOnce}
+              onReset={runner.reset}
+              onSpeed={runner.setSpeed}
+            />
+          </div>
+        )}
       </header>
 
       {plugin.placeholderNoticeKey !== null && (
@@ -258,88 +286,102 @@ function Workspace({
         </p>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Ширина поднята с 72 до 80: в 288 пикселях теория читается плохо.
-            Настоящее решение — тянущиеся разделители из §9, отдельной работой. */}
-        <aside className="flex w-full shrink-0 flex-col gap-5 overflow-y-auto border-b border-line p-5 lg:w-80 lg:border-b-0 lg:border-r">
-          {theory}
+      {reading ? (
+        <>
+          <TheoryView onStart={() => setReading(false)}>{theory}</TheoryView>
+          <div className="border-t border-line px-5 py-3">
+            <LessonNav previous={previous} next={next} />
+          </div>
+        </>
+      ) : (
+        <SplitPane
+          label={tCourse('splitLabel')}
+          initial={0.52}
+          left={
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="max-h-[45%] shrink-0 overflow-y-auto border-b border-line p-5">
+                {teaching === null ? (
+                  <TaskBrief task={task} runner={runner} t={t} />
+                ) : (
+                  <TeachPanel
+                    joints={plugin.joints}
+                    chain={chain}
+                    values={teaching.joints}
+                    note={teaching.note}
+                    onChange={moveTeaching}
+                    onJog={jogTeaching}
+                    onPose={poseTeaching}
+                    onAlignDown={alignTeaching}
+                    onSave={saveTeaching}
+                    onCancel={() => setTeaching(null)}
+                  />
+                )}
+              </div>
 
-          <hr className="border-line" />
+              {/*
+                Редактор остаётся смонтированным и во время показа точки.
+                Размонтировать его нельзя: показанная поза возвращается в блок
+                замыканием на объект Blockly, а вместе с редактором умирает и
+                рабочая область — запись уходит в никуда, и поза теряется молча.
+              */}
+              <div className="flex min-h-0 flex-1 flex-col">
+                <ProgramPanel
+                  program={program}
+                  starter={starter}
+                  current={runner.run.current}
+                  error={programError}
+                  onProgram={onProgram}
+                  onTeach={startTeaching}
+                />
+              </div>
+            </div>
+          }
+          right={
+            <main className="relative min-h-0 flex-1">
+              <RobotViewer
+                robot={model.robot}
+                jointNames={jointNames}
+                values={runner.joints}
+                scene={plugin.scene}
+                bounds={bounds}
+                onFpsSample={onFps}
+              >
+                <SceneObjects
+                  objects={runner.objects}
+                  zones={runner.run.world.zones}
+                  heldId={runner.run.world.grasped}
+                />
 
-          {teaching === null ? (
-            <TaskBrief task={task} runner={runner} t={t} />
-          ) : (
-            <TeachPanel
-              joints={plugin.joints}
-              chain={chain}
-              values={teaching.joints}
-              note={teaching.note}
-              onChange={moveTeaching}
-              onJog={jogTeaching}
-              onPose={poseTeaching}
-              onAlignDown={alignTeaching}
-              onSave={saveTeaching}
-              onCancel={() => setTeaching(null)}
-            />
-          )}
+                {teaching !== null && shownJoints !== null && (
+                  <>
+                    <GhostRobot source={model.robot} jointNames={jointNames} values={shownJoints} />
+                    {/* Оси в долях габарита: у Zu 3 и Zu 20 разный масштаб, и стрелка
+                        в фиксированных сантиметрах у одного потеряется, у другого
+                        закроет сцену. */}
+                    <FlangeTriad chain={chain} values={shownJoints} size={bounds.radius * 0.25} />
+                    <BaseTriad size={bounds.radius * 0.25} />
+                  </>
+                )}
+              </RobotViewer>
 
-          <LessonNav previous={previous} next={next} />
-        </aside>
+              {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. Делается
+                  наложением поверх холста, а не в сцене — шейдер ради неё писать
+                  незачем, а пакет постобработки мы не подключаем. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
+              />
 
-        <section className="flex min-h-0 w-full flex-col border-b border-line lg:min-w-[34rem] lg:flex-1 lg:border-b-0 lg:border-r">
-          <ProgramPanel
-            program={program}
-            starter={starter}
-            current={runner.run.current}
-            error={programError}
-            onProgram={onProgram}
-            onTeach={startTeaching}
-          />
-        </section>
-
-        <main className="relative min-h-0 flex-1 lg:min-w-[26rem]">
-          <RobotViewer
-            robot={model.robot}
-            jointNames={jointNames}
-            values={runner.joints}
-            scene={plugin.scene}
-            bounds={bounds}
-            onFpsSample={onFps}
-          >
-            <SceneObjects
-              objects={runner.objects}
-              zones={runner.run.world.zones}
-              heldId={runner.run.world.grasped}
-            />
-
-            {teaching !== null && shownJoints !== null && (
-              <>
-                <GhostRobot source={model.robot} jointNames={jointNames} values={shownJoints} />
-                {/* Оси в долях габарита: у Zu 3 и Zu 20 разный масштаб, и стрелка
-                    в фиксированных сантиметрах у одного потеряется, у другого
-                    закроет сцену. */}
-                <FlangeTriad chain={chain} values={shownJoints} size={bounds.radius * 0.25} />
-                <BaseTriad size={bounds.radius * 0.25} />
-              </>
-            )}
-          </RobotViewer>
-
-          {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. Делается
-              наложением поверх холста, а не в сцене — шейдер ради неё писать
-              незачем, а пакет постобработки мы не подключаем. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
-          />
-
-          <p
-            data-testid="scene-stats"
-            className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"
-          >
-            <span data-testid="load-ms">{model.loadMs}</span> ms · {fps} fps
-          </p>
-        </main>
-      </div>
+              <p
+                data-testid="scene-stats"
+                className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"
+              >
+                <span data-testid="load-ms">{model.loadMs}</span> ms · {fps} fps
+              </p>
+            </main>
+          }
+        />
+      )}
     </div>
   );
 }

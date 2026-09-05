@@ -19,12 +19,15 @@ const LessonWorkspace = dynamic(
 export function LessonClient({
   task,
   starter,
+  title,
   theory,
   previous,
   next,
 }: {
   task: Task;
   starter: object;
+  /** Заголовок урока из содержания: шапке нужна строка, а не готовый узел. */
+  title: string;
   /**
    * Готовый узел с сервера: рабочее место грузится с `ssr: false` и собрать
    * MDX у себя не может.
@@ -38,6 +41,7 @@ export function LessonClient({
       plugin={jakaZu7}
       task={task}
       starter={starter}
+      title={title}
       theory={theory}
       previous={previous}
       next={next}
