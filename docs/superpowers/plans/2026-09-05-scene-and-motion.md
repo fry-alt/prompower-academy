@@ -43,7 +43,7 @@
 **Files:**
 - Create: `components/simulator/scene-lighting.tsx`
 
-- [ ] **Step 1: Написать компонент**
+- [x] **Step 1: Написать компонент**
 
 Создать `components/simulator/scene-lighting.tsx`:
 
@@ -143,12 +143,12 @@ export function SceneLighting({ radius }: { radius: number }) {
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/scene-lighting.tsx
@@ -162,7 +162,7 @@ git commit -m "feat: студийное освещение и контактна
 **Files:**
 - Modify: `components/simulator/robot-viewer.tsx`
 
-- [ ] **Step 1: Заменить блок освещения**
+- [x] **Step 1: Заменить блок освещения**
 
 В `components/simulator/robot-viewer.tsx` добавить импорт рядом с остальными:
 
@@ -178,7 +178,7 @@ import { SceneLighting } from './scene-lighting';
 
 Именно здесь уходят зашитые `shadow-camera-left={-2}` и три такие же константы: границы теперь считаются от габарита модели, как того требует правило «не хардкодь ни одной характеристики робота».
 
-- [ ] **Step 2: Сделать столешницу стальной**
+- [x] **Step 2: Сделать столешницу стальной**
 
 В том же файле заменить материал столешницы в `WorkTable`:
 
@@ -188,7 +188,7 @@ import { SceneLighting } from './scene-lighting';
 
 Было `roughness={0.85} metalness={0.05}` — матовый пластик. Индустриальный стол стальной, и теперь, когда есть среда, в столешнице появляется отражение робота.
 
-- [ ] **Step 3: Охладить фон**
+- [x] **Step 3: Охладить фон**
 
 В том же файле заменить константу:
 
@@ -198,7 +198,7 @@ const SURFACE = '#101319';
 
 Было `#14161a`. Чуть темнее и заметно холоднее: серый робот на нейтрально-сером фоне сливается, на синеватом — отделяется.
 
-- [ ] **Step 4: Добавить виньетку**
+- [x] **Step 4: Добавить виньетку**
 
 Виньетка делается наложением поверх холста, а не в сцене: шейдер ради неё писать незачем, а пакет постобработки мы не подключаем.
 
@@ -212,12 +212,12 @@ const SURFACE = '#101319';
 />
 ```
 
-- [ ] **Step 5: Проверить типы и тесты**
+- [x] **Step 5: Проверить типы и тесты**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck без вывода, тесты PASS.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add components/simulator/robot-viewer.tsx components/simulator/lesson-workspace.tsx
@@ -230,11 +230,11 @@ git commit -m "feat: границы теней от габарита робот�
 
 **Files:** нет
 
-- [ ] **Step 1: Поднять сервер**
+- [x] **Step 1: Поднять сервер**
 
 Run: `npm run dev`
 
-- [ ] **Step 2: Посмотреть счётчик**
+- [x] **Step 2: Посмотреть счётчик**
 
 Открыть `http://127.0.0.1:3000/ru/lesson/instrument-i-zahvat`, найти показание в правом нижнем углу сцены (`data-testid="scene-stats"`), покрутить камеру полминуты.
 
@@ -247,7 +247,7 @@ Run: `npm run dev`
 
 Отражения в столешнице трогать последними: они дают больше всего на единицу затрат.
 
-- [ ] **Step 3: Прогнать сквозные тесты сцены**
+- [x] **Step 3: Прогнать сквозные тесты сцены**
 
 Run: `npx playwright test tests/e2e/sandbox.spec.ts`
 Expected: PASS, 8 тестов, включая «кадры идут» и «модель грузится быстрее двух секунд».
@@ -262,7 +262,7 @@ Expected: PASS, 8 тестов, включая «кадры идут» и «мо
 - Create: `components/simulator/joint-motion.ts`
 - Create: `components/simulator/joint-motion.test.ts`
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 Создать `components/simulator/joint-motion.test.ts`:
 
@@ -345,12 +345,12 @@ describe('easeInOut', () => {
 });
 ```
 
-- [ ] **Step 2: Убедиться, что тесты падают**
+- [x] **Step 2: Убедиться, что тесты падают**
 
 Run: `npx vitest run components/simulator/joint-motion.test.ts`
 Expected: FAIL — модуль `./joint-motion` не найден.
 
-- [ ] **Step 3: Написать модуль**
+- [x] **Step 3: Написать модуль**
 
 Создать `components/simulator/joint-motion.ts`:
 
@@ -409,12 +409,12 @@ export function easeInOut(t: number): number {
 }
 ```
 
-- [ ] **Step 4: Прогнать тесты**
+- [x] **Step 4: Прогнать тесты**
 
 Run: `npx vitest run components/simulator/joint-motion.test.ts`
 Expected: PASS, 9 тестов.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add components/simulator/joint-motion.ts components/simulator/joint-motion.test.ts
@@ -428,7 +428,7 @@ git commit -m "feat: длительность и интерполяция пок
 **Files:**
 - Create: `components/simulator/use-animated-joints.ts`
 
-- [ ] **Step 1: Написать хук**
+- [x] **Step 1: Написать хук**
 
 Создать `components/simulator/use-animated-joints.ts`:
 
@@ -495,12 +495,12 @@ function reducedMotion(): boolean {
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/use-animated-joints.ts
@@ -514,7 +514,7 @@ git commit -m "feat: показываемая поза едет к целево�
 **Files:**
 - Create: `components/simulator/use-hold-jog.ts`
 
-- [ ] **Step 1: Написать хук**
+- [x] **Step 1: Написать хук**
 
 Создать `components/simulator/use-hold-jog.ts`:
 
@@ -601,12 +601,12 @@ export function useHoldJog(): {
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/use-hold-jog.ts
@@ -620,7 +620,7 @@ git commit -m "feat: удержание кнопки подвода двигае
 **Files:**
 - Modify: `components/simulator/cartesian-panel.tsx`
 
-- [ ] **Step 1: Подключить удержание**
+- [x] **Step 1: Подключить удержание**
 
 В `components/simulator/cartesian-panel.tsx` заменить импорт React и добавить хук:
 
@@ -641,7 +641,7 @@ import { useHoldJog, type HoldHandlers } from './use-hold-jog';
   const hold = useHoldJog();
 ```
 
-- [ ] **Step 2: Сделать кнопки круглыми и тактильными**
+- [x] **Step 2: Сделать кнопки круглыми и тактильными**
 
 Заменить обе кнопки `−` и `+` в разметке строки оси на:
 
@@ -703,12 +703,12 @@ function JogButton({
 }
 ```
 
-- [ ] **Step 3: Проверить типы**
+- [x] **Step 3: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: ошибка в `lesson-workspace.tsx` — `jogTeaching` возвращает `void`, а панель ждёт `boolean`. Чинится следующей задачей.
 
-- [ ] **Step 4: Коммит после Task 8**
+- [x] **Step 4: Коммит после Task 8**
 
 Эта задача и следующая правят две стороны одного контракта, поэтому коммит общий — он в Task 8.
 
@@ -719,7 +719,7 @@ Expected: ошибка в `lesson-workspace.tsx` — `jogTeaching` возвра�
 **Files:**
 - Modify: `components/simulator/lesson-workspace.tsx`
 
-- [ ] **Step 1: Жог сообщает исход**
+- [x] **Step 1: Жог сообщает исход**
 
 В `components/simulator/lesson-workspace.tsx` добавить импорт:
 
@@ -757,7 +757,7 @@ import { useAnimatedJoints } from './use-animated-joints';
   };
 ```
 
-- [ ] **Step 2: Отдать копии показываемую позу**
+- [x] **Step 2: Отдать копии показываемую позу**
 
 Рядом с `const [teaching, setTeaching] = useState<Teaching | null>(null);` добавить:
 
@@ -782,12 +782,12 @@ import { useAnimatedJoints } from './use-animated-joints';
 
 Панель показа (`values={teaching.joints}`) не трогаем — она остаётся на логической позе.
 
-- [ ] **Step 3: Проверить типы и тесты**
+- [x] **Step 3: Проверить типы и тесты**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck без вывода, тесты PASS.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add components/simulator/cartesian-panel.tsx components/simulator/lesson-workspace.tsx
@@ -801,7 +801,7 @@ git commit -m "feat: копия едет между позами, кнопки �
 **Files:**
 - Modify: `tests/e2e/lesson.spec.ts`
 
-- [ ] **Step 1: Написать тесты**
+- [x] **Step 1: Написать тесты**
 
 Добавить в конец `tests/e2e/lesson.spec.ts`:
 
@@ -846,12 +846,12 @@ test('отпускание кнопки останавливает движен�
 });
 ```
 
-- [ ] **Step 2: Прогнать**
+- [x] **Step 2: Прогнать**
 
 Run: `npx playwright test tests/e2e/lesson.spec.ts`
 Expected: PASS, прежние 18 тестов урока плюс 2 новых.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add tests/e2e/lesson.spec.ts
@@ -864,17 +864,17 @@ git commit -m "test: удержание кнопки подвода и оста�
 
 **Files:** нет
 
-- [ ] **Step 1: Типы**
+- [x] **Step 1: Типы**
 
 Run: `npm run typecheck`
 Expected: без вывода.
 
-- [ ] **Step 2: Unit**
+- [x] **Step 2: Unit**
 
 Run: `npm test`
 Expected: PASS, не меньше прежних 347 тестов плюс 9 новых.
 
-- [ ] **Step 3: E2E**
+- [x] **Step 3: E2E**
 
 Run: `npx playwright test`
 Expected: PASS, прежние 26 плюс 2 новых.
