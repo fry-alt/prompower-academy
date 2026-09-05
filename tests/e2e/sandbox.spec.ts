@@ -30,7 +30,10 @@ test('модель грузится быстрее двух секунд', async
 });
 
 test('кадры идут', async ({ page }) => {
-  await expect(page.getByTestId('scene-stats')).toContainText(/\d+ fps/, { timeout: 5000 });
+  // Пятнадцать секунд, а не пять: счётчик отдаёт показание раз в секунду, и до
+  // первого отсчёта успевает пройти загрузка модели с программным рендером.
+  // Проверяется, что кадры идут, а не что они появились за пять секунд.
+  await expect(page.getByTestId('scene-stats')).toContainText(/\d+ fps/, { timeout: 15_000 });
 });
 
 test('ползунок двигает сустав', async ({ page }) => {
