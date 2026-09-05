@@ -1,5 +1,6 @@
 import type { Condition, Expression, Program, Statement } from '../program/ast';
 import { ioBankLabel } from '../io';
+import { TICK_MS } from '../tick';
 import {
   advanceTick,
   digitalInput,
@@ -33,9 +34,6 @@ import type { MotionPlanner, MotionResult } from './motion';
  * Состояние прогона неизменяемо: шаг возвращает новое. Это даёт перемотку и
  * сравнение с эталоном даром.
  */
-
-/** Длительность тика. Только для перевода миллисекунд из программы в тики. */
-export const TICK_MS = 10;
 
 /** Сколько шагов считаем признаком зацикливания. Вкладка не должна виснуть. */
 const DEFAULT_MAX_STEPS = 100_000;

@@ -8,7 +8,8 @@ import {
   type WorldState,
 } from '../world/state';
 import { planned, refused, type MotionPlanner, type MotionResult } from './motion';
-import { createRun, evaluate, runToCompletion, step, TICK_MS, type RunState } from './run';
+import { createRun, evaluate, runToCompletion, step, type RunState } from './run';
+import { TICK_MS } from '../tick';
 
 /**
  * Планировщик-пустышка: переставляет суставы в цель без всякой кинематики.

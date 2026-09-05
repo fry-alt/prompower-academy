@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { flangePose } from '../kinematics/chain';
 import { parseUrdfChain } from '../kinematics/urdf';
 import { createPlanner } from './planner';
-import { TICK_MS } from './run';
+import { TICK_MS } from '../tick';
 
 /**
  * Шесть осей, как у всех моделей в реестре. Меньше нельзя: движение по прямой

@@ -108,9 +108,11 @@ export {
   setDigitalOutput,
   setJoints,
   setVariable,
+  type Conveyor,
   type EventLog,
   type IoBankState,
   type SceneObject,
+  type Sensor,
   type SimEvent,
   type Vec3,
   type WorldInit,
@@ -142,8 +144,8 @@ export {
   evaluateCondition,
   runToCompletion,
   step,
-  TICK_MS,
   type RunOptions,
   type RunState,
   type RunStatus,
 } from './interpreter/run';
+export { TICK_MS } from './tick';

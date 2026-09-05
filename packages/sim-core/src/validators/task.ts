@@ -1,4 +1,5 @@
-import type { SceneObject, Zone } from '../world/state';
+import { isIoBank } from '../io';
+import type { Conveyor, SceneObject, Sensor, Zone } from '../world/state';
 
 /**
  * Задание описывается декларативно, рядом с уроком (§6 брифа).
@@ -23,6 +24,10 @@ export interface Hint {
 export interface TaskWorld {
   readonly objects: readonly SceneObject[];
   readonly zones: readonly Zone[];
+  /** Ленты сцены: по ним детали приезжают к роботу сами. */
+  readonly conveyors: readonly Conveyor[];
+  /** Датчики присутствия: держат вход включённым, пока перед ними деталь. */
+  readonly sensors: readonly Sensor[];
   /** Стартовая поза робота. Не задана — берётся домашняя из конфига модели. */
   readonly joints?: readonly number[];
 }
@@ -80,6 +85,12 @@ function parseWorld(input: unknown, path: string): TaskWorld {
     zones: optionalArray(record['zones'], `${path}.zones`).map((item, index) =>
       parseBox(item, `${path}.zones[${index}]`),
     ),
+    conveyors: optionalArray(record['conveyors'], `${path}.conveyors`).map((item, index) =>
+      parseConveyor(item, `${path}.conveyors[${index}]`),
+    ),
+    sensors: optionalArray(record['sensors'], `${path}.sensors`).map((item, index) =>
+      parseSensor(item, `${path}.sensors[${index}]`),
+    ),
   };
 
   if (joints === undefined) return world;
@@ -99,6 +110,45 @@ function parseBox(input: unknown, path: string): SceneObject {
     position: parseVec3(record['position'], `${path}.position`),
     size: parseVec3(record['size'], `${path}.size`),
   };
+}
+
+/** Лента: та же коробка плюс ось движения и скорость в метрах в секунду. */
+function parseConveyor(input: unknown, path: string): Conveyor {
+  const box = parseBox(input, path);
+  const record = asRecord(input, path);
+  const axis = asNonEmptyString(record['axis'], `${path}.axis`);
+
+  if (axis !== 'x' && axis !== 'y') {
+    throw new TaskParseError(`${path}.axis`, `ожидалось x или y, получено «${axis}»`);
+  }
+
+  const speed = asNumber(record['speed'], `${path}.speed`);
+  if (speed === 0) {
+    throw new TaskParseError(`${path}.speed`, 'лента со скоростью 0 ничего не везёт');
+  }
+
+  return { ...box, axis, speed };
+}
+
+/** Датчик: коробка плюс канал, который он держит включённым. */
+function parseSensor(input: unknown, path: string): Sensor {
+  const box = parseBox(input, path);
+  const record = asRecord(input, path);
+  const bank = record['bank'];
+
+  if (!isIoBank(bank)) {
+    throw new TaskParseError(
+      `${path}.bank`,
+      `ожидалось cabinet или tool, получено «${String(bank)}»`,
+    );
+  }
+
+  const channel = asNumber(record['channel'], `${path}.channel`);
+  if (!Number.isInteger(channel) || channel < 1) {
+    throw new TaskParseError(`${path}.channel`, `каналы нумеруются с единицы, получено ${channel}`);
+  }
+
+  return { ...box, bank, channel };
 }
 
 function parseVec3(input: unknown, path: string): { x: number; y: number; z: number } {

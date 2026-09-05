@@ -73,6 +73,8 @@ export function useProgramRun(
         joints: [...homePose],
         objects: [...task.world.objects],
         zones: [...task.world.zones],
+        conveyors: [...task.world.conveyors],
+        sensors: [...task.world.sensors],
       }),
     [homePose, task],
   );

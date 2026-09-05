@@ -16,7 +16,7 @@ import {
 import { isWithinLimits } from '../kinematics/joint-limits';
 import type { MotionParams, Pose } from '../program/ast';
 import type { Vec3 } from '../world/state';
-import { TICK_MS } from './run';
+import { TICK_MS } from '../tick';
 import { planned, refused, type MotionPlanner, type MotionResult } from './motion';
 
 /**

@@ -11,6 +11,8 @@
  */
 
 import { DEFAULT_IO_LAYOUT, ioBankLabel, type IoBank } from '../io';
+import { TICK_MS } from '../tick';
+import { isInsideZone } from './aabb';
 import type { StatementOp } from '../program/ast';
 
 /**
@@ -48,6 +50,36 @@ export interface Zone {
   readonly size: Vec3;
 }
 
+/**
+ * Лента конвейера: коробка, ось и скорость в метрах в секунду.
+ *
+ * Деталь, чей центр внутри коробки и которая не зажата, едет вдоль оси и
+ * останавливается на краю ленты — это и есть упор в её конце. Никакой физики:
+ * ни трения, ни падения, ни поворота детали (§13 брифа).
+ */
+export interface Conveyor {
+  readonly id: string;
+  readonly position: Vec3;
+  readonly size: Vec3;
+  readonly axis: 'x' | 'y';
+  /** Знак задаёт направление вдоль оси. */
+  readonly speed: number;
+}
+
+/**
+ * Датчик присутствия: пока в его коробке есть деталь, вход включён.
+ *
+ * Фиксации нет — это фотодатчик, а не защёлка, и ведёт он себя так же, как на
+ * реальной ячейке. Канал нумеруется с единицы, как в интерфейсе робота.
+ */
+export interface Sensor {
+  readonly id: string;
+  readonly position: Vec3;
+  readonly size: Vec3;
+  readonly bank: IoBank;
+  readonly channel: number;
+}
+
 export interface WorldState {
   /** Счётчик тиков с начала прогона. Единственный источник времени. */
   readonly tick: number;
@@ -55,6 +87,9 @@ export interface WorldState {
   readonly joints: readonly number[];
   readonly objects: Readonly<Record<string, SceneObject>>;
   readonly zones: Readonly<Record<string, Zone>>;
+  /** Ленты сцены. За прогон не меняются, но тик берёт их отсюда. */
+  readonly conveyors: Readonly<Record<string, Conveyor>>;
+  readonly sensors: Readonly<Record<string, Sensor>>;
   /** Идентификатор объекта в захвате либо `null`. */
   readonly grasped: string | null;
   /**
@@ -102,6 +137,8 @@ export interface WorldInit {
   readonly joints: readonly number[];
   readonly objects?: readonly SceneObject[];
   readonly zones?: readonly Zone[];
+  readonly conveyors?: readonly Conveyor[];
+  readonly sensors?: readonly Sensor[];
   /** Число каналов по банкам. По умолчанию как на планшете JAKA. */
   readonly io?: Partial<Record<IoBank, { readonly inputs: number; readonly outputs: number }>>;
 }
@@ -112,6 +149,8 @@ export function createWorld(init: WorldInit): WorldState {
     joints: [...init.joints],
     objects: byId(init.objects ?? []),
     zones: byId(init.zones ?? []),
+    conveyors: byId(init.conveyors ?? []),
+    sensors: byId(init.sensors ?? []),
     grasped: null,
     graspOffset: null,
     gripperOpen: true,
@@ -136,8 +175,67 @@ export function digitalOutput(world: WorldState, bank: IoBank, channel: number):
   return world.io[bank].outputs[channel - 1] ?? null;
 }
 
+/**
+ * Шаг времени: единственное место, где на сцене что-то происходит само.
+ *
+ * Сначала ленты везут детали, потом датчики смотрят, что перед ними оказалось,
+ * — иначе вход отставал бы от картинки на тик.
+ *
+ * Пачка тиков считается одним сдвигом на всю пачку: движение равномерное, и
+ * результат совпадает с потиковым. Датчик при этом опрашивается в конце пачки,
+ * поэтому деталь, проехавшая мимо него за одно длинное движение робота, может
+ * остаться незамеченной. Ожидание сигнала от этого не страдает: `waitDI`
+ * двигает время по одному тику.
+ */
 export function advanceTick(world: WorldState, ticks = 1): WorldState {
-  return { ...world, tick: world.tick + ticks };
+  const carried = carryConveyors(world, ticks);
+  return readSensors({ ...carried, tick: world.tick + ticks });
+}
+
+/** Детали на лентах за `ticks` тиков. Зажатая деталь едет с рукой, а не с лентой. */
+function carryConveyors(world: WorldState, ticks: number): WorldState {
+  const belts = Object.values(world.conveyors);
+  if (belts.length === 0 || ticks === 0) return world;
+
+  let objects = world.objects;
+
+  for (const object of Object.values(world.objects)) {
+    if (object.id === world.grasped) continue;
+
+    const belt = belts.find((candidate) => isInsideZone(object, candidate));
+    if (belt === undefined) continue;
+
+    const shift = belt.speed * ticks * (TICK_MS / 1000);
+    const edge = belt.position[belt.axis] + (Math.sign(belt.speed) * belt.size[belt.axis]) / 2;
+    const from = object.position[belt.axis];
+    const to = belt.speed > 0 ? Math.min(from + shift, edge) : Math.max(from + shift, edge);
+
+    objects = {
+      ...objects,
+      [object.id]: { ...object, position: { ...object.position, [belt.axis]: to } },
+    };
+  }
+
+  return objects === world.objects ? world : { ...world, objects };
+}
+
+/** Входы датчиков по тому, что сейчас лежит в их коробках. */
+function readSensors(world: WorldState): WorldState {
+  const eyes = Object.values(world.sensors);
+  if (eyes.length === 0) return world;
+
+  const objects = Object.values(world.objects);
+
+  return eyes.reduce(
+    (state, eye) =>
+      setDigitalInput(
+        state,
+        eye.bank,
+        eye.channel,
+        objects.some((object) => isInsideZone(object, eye)),
+      ),
+    world,
+  );
 }
 
 export function setJoints(world: WorldState, joints: readonly number[]): WorldState {
