@@ -1,5 +1,5 @@
 import type { Program, Statement } from '../program/ast';
-import type { EventLog, WorldState } from '../world/state';
+import type { EventLog, Vec3, WorldState } from '../world/state';
 import { zoneContaining } from '../world/aabb';
 import type { Constraint, Goal, Hint, Task } from './task';
 
@@ -42,7 +42,40 @@ function checkGoal(goal: Goal, world: WorldState, log: EventLog): string | null 
       return checkObjectInZone(goal, world, log);
     case 'gripperState':
       return checkGripperState(goal, world);
+    case 'pointsVisited':
+      return checkPointsVisited(goal, log);
   }
+}
+
+/**
+ * Точки задания против точек, где движения заканчивались.
+ *
+ * Координаты в тексте — миллиметры: ученик набирает их такими же в блоке
+ * движения, и метры ядра ему ни о чём не скажут.
+ */
+function checkPointsVisited(goal: Goal & { type: 'pointsVisited' }, log: EventLog): string | null {
+  const visited = log.filter((event) => event.kind === 'moved').map((event) => event.point);
+
+  const missed = goal.points.findIndex(
+    (point) => !visited.some((stop) => distance(stop, point) <= goal.tolerance),
+  );
+  if (missed === -1) return null;
+
+  const point = goal.points[missed]!;
+  return (
+    `Робот не побывал в точке ${missed + 1}: ` +
+    `X ${millimetres(point.x)}, Y ${millimetres(point.y)}, Z ${millimetres(point.z)} мм.`
+  );
+}
+
+function distance(from: Vec3, to: Vec3): number {
+  return Math.hypot(from.x - to.x, from.y - to.y, from.z - to.z);
+}
+
+/** Минус здесь типографский: это текст для человека, а не выражение. */
+function millimetres(metres: number): string {
+  const value = Math.round(metres * 1000);
+  return value < 0 ? `−${Math.abs(value)}` : String(value);
 }
 
 function checkObjectInZone(

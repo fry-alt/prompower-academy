@@ -14,6 +14,7 @@ import {
   jogPose,
   jogToPose,
   type JogAxis,
+  type Goal,
   type JogFrame,
   type JogResult,
   type Pose,
@@ -446,11 +447,7 @@ function TaskBrief({
         <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
         <ul className="flex flex-col gap-1 text-sm text-ink-dim">
           {task.goals.map((goal, index) => (
-            <li key={index}>
-              {goal.type === 'objectInZone'
-                ? t('goal.objectInZone', { object: goal.object, zone: goal.zone })
-                : t('goal.gripperState', { state: t(`gripper.${goal.state}`) })}
-            </li>
+            <li key={index}>{goalText(goal, t)}</li>
           ))}
         </ul>
       </section>
@@ -459,6 +456,18 @@ function TaskBrief({
       <Hints task={task} failedAttempts={runner.failedAttempts} t={t} />
     </>
   );
+}
+
+/** Условие цели по-русски. Switch, а не цепочка вопросов: целей будет больше. */
+function goalText(goal: Goal, t: ReturnType<typeof useTranslations<'lesson'>>): string {
+  switch (goal.type) {
+    case 'objectInZone':
+      return t('goal.objectInZone', { object: goal.object, zone: goal.zone });
+    case 'gripperState':
+      return t('goal.gripperState', { state: t(`gripper.${goal.state}`) });
+    case 'pointsVisited':
+      return t('goal.pointsVisited', { count: goal.points.length });
+  }
 }
 
 /**

@@ -455,6 +455,25 @@ describe('движения', () => {
     );
     expect(result.world.joints).toEqual(before.joints);
   });
+
+  it('пишет в журнал точку, где движение закончилось', () => {
+    const result = run(program({ op: 'moveJ', joints: [0.4, 0, 0, 0, 0, 0], speed: 1, acc: 1 }));
+    const moved = result.log.filter((event) => event.kind === 'moved');
+
+    // Планировщик теста ставит фланец по первому суставу.
+    expect(moved).toHaveLength(1);
+    expect(moved[0]!.point).toEqual({ x: 0.4, y: 0, z: 0 });
+  });
+
+  it('несостоявшееся движение точки в журнал не пишет', () => {
+    const result = run(
+      program({ op: 'moveJ', joints: [1, 1, 1, 1, 1, 1], speed: 1, acc: 1 }),
+      world(),
+      refusingPlanner,
+    );
+
+    expect(result.log.some((event) => event.kind === 'moved')).toBe(false);
+  });
 });
 
 describe('подсветка текущего блока', () => {

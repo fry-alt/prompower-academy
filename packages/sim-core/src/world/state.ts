@@ -127,6 +127,14 @@ export type SimEvent =
       readonly name: string;
       readonly value: number;
     }
+  /**
+   * Конец удавшегося движения: где оказался фланец.
+   *
+   * Нужно автопроверке заданий без детали — «пройди три точки» сверяется именно
+   * с этими записями. Промежуточные позы в журнал не идут: у движения по осям
+   * они произвольны, и точку можно было бы зацепить случайно.
+   */
+  | { readonly kind: 'moved'; readonly tick: number; readonly point: Vec3 }
   | { readonly kind: 'collision'; readonly tick: number; readonly objectId: string }
   | { readonly kind: 'error'; readonly tick: number; readonly message: string }
   | { readonly kind: 'finished'; readonly tick: number };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Program } from '../program/ast';
-import { createWorld, graspObject, moveObject, releaseObject } from '../world/state';
+import { createWorld, graspObject, moveObject, releaseObject, type EventLog } from '../world/state';
 import { checkTask, earnedHints } from './check';
 import { parseTask, type Task } from './task';
 
@@ -137,6 +137,48 @@ describe('ограничение на размер программы', () => {
     expect(checkTask(TASK, branchy, solved(), []).failures).toContain(
       'В программе 7 инструкций, а разрешено не больше 6.',
     );
+  });
+});
+
+describe('цель «пройти точки»', () => {
+  const FIRST = { x: 0.35, y: 0.2, z: 0.22 };
+  const SECOND = { x: 0.35, y: -0.2, z: 0.22 };
+
+  const ROUTE: Task = parseTask({
+    ...RAW_TASK,
+    goals: [{ type: 'pointsVisited', points: [FIRST, SECOND], tolerance: 0.01 }],
+    constraints: [],
+  });
+
+  const visit = (...points: readonly { x: number; y: number; z: number }[]): EventLog =>
+    points.map((point, index) => ({ kind: 'moved', tick: index, point }) as const);
+
+  it('засчитывает, когда фланец побывал у каждой точки', () => {
+    const result = checkTask(ROUTE, SHORT, world(), visit(FIRST, SECOND));
+
+    expect(result.passed).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  it('порядок обхода не важен', () => {
+    expect(checkTask(ROUTE, SHORT, world(), visit(SECOND, FIRST)).passed).toBe(true);
+  });
+
+  it('промах в пределах допуска — это попадание', () => {
+    const almost = { ...FIRST, z: FIRST.z + 0.009 };
+    expect(checkTask(ROUTE, SHORT, world(), visit(almost, SECOND)).passed).toBe(true);
+  });
+
+  it('пропущенная точка названа номером и координатами в миллиметрах', () => {
+    const result = checkTask(ROUTE, SHORT, world(), visit(FIRST));
+
+    expect(result.passed).toBe(false);
+    expect(result.failures[0]).toBe('Робот не побывал в точке 2: X 350, Y −200, Z 220 мм.');
+  });
+
+  it('мимо допуска — мимо точки', () => {
+    const far = { ...SECOND, y: SECOND.y + 0.02 };
+    expect(checkTask(ROUTE, SHORT, world(), visit(FIRST, far)).passed).toBe(false);
   });
 });
 

@@ -110,7 +110,8 @@
     "failed": "Task not complete:",
     "goal": {
       "objectInZone": "Move “{object}” into “{zone}”",
-      "gripperState": "Leave the gripper {state}"
+      "gripperState": "Leave the gripper {state}",
+      "pointsVisited": "Visit every marked point ({count})"
     },
     "gripper": {
       "open": "open",

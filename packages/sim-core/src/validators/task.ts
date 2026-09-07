@@ -1,5 +1,5 @@
 import { isIoBank } from '../io';
-import type { Conveyor, SceneObject, Sensor, Zone } from '../world/state';
+import type { Conveyor, SceneObject, Sensor, Vec3, Zone } from '../world/state';
 
 /**
  * Задание описывается декларативно, рядом с уроком (§6 брифа).
@@ -11,7 +11,17 @@ import type { Conveyor, SceneObject, Sensor, Zone } from '../world/state';
 
 export type Goal =
   | { readonly type: 'objectInZone'; readonly object: string; readonly zone: string }
-  | { readonly type: 'gripperState'; readonly state: 'open' | 'closed' };
+  | { readonly type: 'gripperState'; readonly state: 'open' | 'closed' }
+  /**
+   * Фланец побывал у каждой из точек. Порядок обхода не проверяется: урок про
+   * движение, а не про последовательность.
+   */
+  | {
+      readonly type: 'pointsVisited';
+      readonly points: readonly Vec3[];
+      /** Насколько близко нужно подойти, метры. */
+      readonly tolerance: number;
+    };
 
 export type Constraint = { readonly type: 'maxStatements'; readonly value: number };
 
@@ -178,6 +188,27 @@ function parseGoal(input: unknown, path: string): Goal {
         throw new TaskParseError(`${path}.state`, `ожидалось open или closed, получено «${state}»`);
       }
       return { type, state };
+    }
+
+    case 'pointsVisited': {
+      const points = asArray(record['points'], `${path}.points`).map((item, index) =>
+        parseVec3(item, `${path}.points[${index}]`),
+      );
+      if (points.length === 0) {
+        throw new TaskParseError(`${path}.points`, 'нужна хотя бы одна точка');
+      }
+
+      // Допуск обязателен: подразумевать его молча значит однажды поменять
+      // значение и незаметно сломать все уроки, которые на него опирались.
+      const tolerance = asNumber(record['tolerance'], `${path}.tolerance`);
+      if (tolerance <= 0) {
+        throw new TaskParseError(
+          `${path}.tolerance`,
+          `допуск должен быть больше нуля, получено ${tolerance}`,
+        );
+      }
+
+      return { type, points, tolerance };
     }
 
     default:

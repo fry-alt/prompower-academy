@@ -330,8 +330,19 @@ function executeMotion(
 
   const { plan } = result;
   const moved = setJoints(advanceTick(state.world, plan.ticks), plan.joints);
-  return next({ ...logged, world: carryGraspedObject(moved, planner), lastMotion: plan.waypoints });
+  const world = carryGraspedObject(moved, planner);
+
+  // Точка, где движение закончилось: по ней автопроверка засчитывает задания
+  // без детали. Матрицы наружу не выходят — планировщик отдаёт точку сцены.
+  const stopped = append(logged, {
+    kind: 'moved',
+    tick: world.tick,
+    point: planner.flangePoint(plan.joints, ORIGIN),
+  });
+
+  return next({ ...stopped, world, lastMotion: plan.waypoints });
 }
+
 
 /**
  * Зажатая деталь едет вместе с фланцем.

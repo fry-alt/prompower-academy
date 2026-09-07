@@ -1,0 +1,57 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "pp_set_speed",
+        "fields": {
+          "PERCENT": 40
+        },
+        "next": {
+          "block": {
+            "type": "pp_comment",
+            "fields": {
+              "TEXT": "Подняться над столом по осям"
+            },
+            "next": {
+              "block": {
+                "type": "pp_move_joint",
+                "fields": {
+                  "J1": 13.2,
+                  "J2": 88.3,
+                  "J3": -118.6,
+                  "J4": 120.3,
+                  "J5": 90,
+                  "J6": -76.8
+                },
+                "next": {
+                  "block": {
+                    "type": "pp_comment",
+                    "fields": {
+                      "TEXT": "Точка 1"
+                    },
+                    "next": {
+                      "block": {
+                        "type": "pp_move_linear",
+                        "fields": {
+                          "X": 350,
+                          "Y": 200,
+                          "Z": 220,
+                          "RX": 180,
+                          "RY": 0,
+                          "RZ": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 24,
+        "y": 24
+      }
+    ]
+  }
+}
