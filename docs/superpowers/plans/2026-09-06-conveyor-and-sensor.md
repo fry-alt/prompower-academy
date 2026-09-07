@@ -36,20 +36,20 @@
 - Modify: `packages/sim-core/src/world/state.ts`, `index.ts`
 - Create: `packages/sim-core/src/world/conveyor.test.ts`
 
-- [ ] **Step 1: Тесты**
+- [x] **Step 1: Тесты**
 
 Деталь на ленте едет за тик на `speed × TICK`; вне коробки ленты не едет;
 зажатая деталь не едет; доехав до края, останавливается; датчик включает свой
 вход, пока деталь внутри, и выключает, когда она вышла; пачка тиков считается
 как один сдвиг на всю пачку.
 
-- [ ] **Step 2: Типы и тик**
+- [x] **Step 2: Типы и тик**
 
 `Conveyor { id, position, size, axis: 'x' | 'y', speed }`,
 `Sensor { id, position, size, bank, channel }`. Поля в `WorldState` и
 `WorldInit`. В `advanceTick`: сначала лента, потом датчики.
 
-- [ ] **Step 3: Проверить**
+- [x] **Step 3: Проверить**
 
 Run: `npm test`
 Expected: PASS.
@@ -60,16 +60,16 @@ Expected: PASS.
 - Modify: `packages/sim-core/src/validators/task.ts`, `task.test.ts` при наличии
 - Modify: `components/simulator/use-program-run.ts`
 
-- [ ] **Step 1: Разбор**
+- [x] **Step 1: Разбор**
 
 `world.conveyors` и `world.sensors` — необязательные массивы. Ошибка называет
 путь до места, как у остальных полей.
 
-- [ ] **Step 2: Стартовый мир**
+- [x] **Step 2: Стартовый мир**
 
 `createWorld` в хуке прогона получает ленту и датчики из задания.
 
-- [ ] **Step 3: Проверить**
+- [x] **Step 3: Проверить**
 
 Run: `npm run typecheck && npm test`
 Expected: без вывода, PASS.
@@ -80,17 +80,17 @@ Expected: без вывода, PASS.
 - Create: `content/courses/osnovy-raboty-s-kobotom/lessons/05-vhody-i-vyhody/{lesson.ru.mdx,task.json,starter.json,demo-program.json}`
 - Create: `tests/sim/conveyor.test.ts`
 
-- [ ] **Step 1: Задание**
+- [x] **Step 1: Задание**
 
 Лента вдоль Y приводит деталь к точке захвата урока 4 (x 0.35, y 0.2), датчик
 на её конце включает вход шкафа 1. Цель — деталь в зоне B, захват открыт.
 
-- [ ] **Step 2: Эталонная программа**
+- [x] **Step 2: Эталонная программа**
 
 Ждать вход → подойти → взять → перенести → отпустить. Позы берутся из урока 4:
 они уже проверены прогоном.
 
-- [ ] **Step 3: Тест эталона**
+- [x] **Step 3: Тест эталона**
 
 Прогон эталона доходит до конца, проходит проверку; программа без ожидания
 сигнала хватает пустоту и проверку не проходит.
@@ -98,7 +98,7 @@ Expected: без вывода, PASS.
 Run: `npm test`
 Expected: PASS.
 
-- [ ] **Step 4: Теория**
+- [x] **Step 4: Теория**
 
 MDX: цифровые входы и выходы, датчик как источник сигнала, зачем ждать. 2–4
 минуты чтения.
@@ -108,11 +108,11 @@ MDX: цифровые входы и выходы, датчик как источ
 **Files:**
 - Modify: `components/simulator/scene-objects.tsx`
 
-- [ ] **Step 1: Лента и датчик**
+- [x] **Step 1: Лента и датчик**
 
 Лента — плита с направлением, датчик — рамка, светящаяся при включённом входе.
 
-- [ ] **Step 2: Посмотреть глазами**
+- [x] **Step 2: Посмотреть глазами**
 
 Открыть урок 5, снять сцену: деталь едет, датчик срабатывает.
 

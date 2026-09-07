@@ -148,10 +148,19 @@ export function useProgramRun(
         setJoints(poseAt(current.waypoints, progress));
         if (progress >= 1) animation.current = null;
       } else if (status === 'playing') {
-        const after = advance();
-        if (after.status !== 'running') {
-          setStatus('done');
-          return;
+        // Инструкции без движения идут по одной за кадр, и ползунок скорости их
+        // не касался: ожидание сигнала с конвейера промотать было нечем. Шаги
+        // делаются пачкой по множителю скорости и обрываются, как только
+        // началось движение — его показывает анимация, а не счётчик шагов.
+        const steps = Math.max(1, Math.round(speedRef.current));
+
+        for (let i = 0; i < steps; i += 1) {
+          const after = advance();
+          if (after.status !== 'running') {
+            setStatus('done');
+            return;
+          }
+          if (animation.current !== null) break;
         }
       } else {
         return;

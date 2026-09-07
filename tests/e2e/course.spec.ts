@@ -26,11 +26,19 @@ test('на экране урока видна теория', async ({ page }) =>
 });
 
 test('последний урок честно говорит, что он последний', async ({ page }) => {
-  await page.goto('/ru/lesson/instrument-i-zahvat');
+  await page.goto('/ru/lesson/vhody-i-vyhody');
 
-  // Урок пока единственный: и «назад», и «дальше» вести некуда.
   await expect(page.getByTestId('lesson-nav')).toBeVisible();
   await expect(page.getByText('Это последний урок курса')).toBeVisible();
+});
+
+test('из урока про инструмент ведёт переход к следующему', async ({ page }) => {
+  await page.goto('/ru/lesson/instrument-i-zahvat');
+
+  await page.getByTestId('lesson-next').click();
+
+  await expect(page).toHaveURL(/\/lesson\/vhody-i-vyhody/);
+  await expect(page.getByRole('heading', { name: 'Входы и выходы' })).toBeVisible();
 });
 
 /**

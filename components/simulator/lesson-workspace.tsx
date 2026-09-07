@@ -9,6 +9,7 @@ import { TheoryView } from '@/components/lesson/theory-view';
 import { useWideEnough } from '@/components/lesson/use-wide-enough';
 import {
   alignToolDown,
+  digitalInput,
   earnedHints,
   jogPose,
   jogToPose,
@@ -272,6 +273,18 @@ function Workspace({
 
   const jointNames = useMemo(() => plugin.joints.map((joint) => joint.urdfName), [plugin]);
 
+  // Датчик светится по своему входу, а не по собственной проверке «есть ли
+  // деталь перед ним»: второй такой расчёт разошёлся бы с миром молча.
+  const sensorOn = useMemo(() => {
+    const { world } = runner.run;
+    return Object.fromEntries(
+      Object.values(world.sensors).map((sensor) => [
+        sensor.id,
+        digitalInput(world, sensor.bank, sensor.channel) === true,
+      ]),
+    );
+  }, [runner.run]);
+
   // Кадр строится по роботу вместе с деталями и зонами: иначе задание окажется
   // за краем экрана, а ученику надо видеть, куда он перекладывает деталь.
   const bounds = useMemo(
@@ -376,6 +389,9 @@ function Workspace({
                 <SceneObjects
                   objects={runner.objects}
                   zones={runner.run.world.zones}
+                  conveyors={runner.run.world.conveyors}
+                  sensors={runner.run.world.sensors}
+                  sensorOn={sensorOn}
                   heldId={runner.run.world.grasped}
                 />
 
