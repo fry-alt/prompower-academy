@@ -370,6 +370,7 @@ function Workspace({
                   starter={starter}
                   current={runner.run.current}
                   error={programError}
+                  fileName={`${task.id}.py`}
                   onProgram={onProgram}
                   onTeach={startTeaching}
                 />

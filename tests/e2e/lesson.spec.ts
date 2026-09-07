@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 /**
@@ -135,6 +136,22 @@ test('вкладка «Код» показывает готовый скрипт
   await expect(code).toContainText('robot.joint_move');
   // Захват на роботе — это выход инструмента, а не отдельная команда.
   await expect(code).toContainText('robot.set_digital_output(IO_TOOL');
+});
+
+test('код скачивается файлом и совпадает с показанным', async ({ page }) => {
+  await page.getByTestId('tab-code').click();
+  const shown = await page.getByTestId('python-code').innerText();
+
+  const [file] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByTestId('download-python').click(),
+  ]);
+
+  // Имя — идентификатор задания: заголовки уроков русские, файлы латиницей.
+  expect(file.suggestedFilename()).toBe('pick-and-place-basic.py');
+
+  const saved = await file.path();
+  expect(readFileSync(saved, 'utf8').trim()).toBe(shown.trim());
 });
 
 test('список показывает ту же программу, что собрана из блоков', async ({ page }) => {

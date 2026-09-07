@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toPython } from '@prompower/blocks';
 import type { Program, Statement } from '@prompower/sim-core';
@@ -22,6 +22,7 @@ export function ProgramPanel({
   starter,
   current,
   error,
+  fileName,
   onProgram,
   onTeach,
 }: {
@@ -30,11 +31,16 @@ export function ProgramPanel({
   /** Исполняемая сейчас инструкция — подсвечивается в списке. */
   current: Statement | null;
   error: string | null;
+  /** Имя файла для скачивания: идентификатор задания, а не заголовок урока. */
+  fileName: string;
   onProgram: (program: Program, error: string | null) => void;
   onTeach: (request: TeachRequest) => void;
 }) {
   const t = useTranslations('lesson');
   const [tab, setTab] = useState<Tab>('blocks');
+
+  // Скрипт считается один раз: показанное и скачанное обязаны совпадать.
+  const script = useMemo(() => toPython(program), [program]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -77,15 +83,45 @@ export function ProgramPanel({
       )}
 
       {tab === 'code' && (
-        <div className="min-h-0 flex-1 overflow-auto">
-          <pre
-            data-testid="python-code"
-            className="p-3 font-mono text-xs leading-relaxed text-ink-dim"
-          >
-            {toPython(program)}
-          </pre>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-auto">
+            <pre
+              data-testid="python-code"
+              className="p-3 font-mono text-xs leading-relaxed text-ink-dim"
+            >
+              {script}
+            </pre>
+          </div>
+
+          <div className="border-t border-line px-3 py-2">
+            <button
+              type="button"
+              data-testid="download-python"
+              onClick={() => download(fileName, script)}
+              className="rounded-panel border border-line px-2.5 py-1 text-xs text-ink-dim hover:text-ink"
+            >
+              {t('downloadPython')}
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+/**
+ * Отдать скрипт файлом.
+ *
+ * Ссылка отзывается сразу после нажатия: иначе Blob висит в памяти вкладки до
+ * перезагрузки страницы, а уроков за сессию проходят несколько.
+ */
+function download(fileName: string, script: string): void {
+  const url = URL.createObjectURL(new Blob([script], { type: 'text/x-python;charset=utf-8' }));
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  link.click();
+
+  URL.revokeObjectURL(url);
 }
