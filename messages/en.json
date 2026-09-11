@@ -102,6 +102,11 @@
       "text": "The program is built from blocks and tested on a robot in 3D — that does not fit a phone screen. Read the theory here and open this address on a computer for the task.",
       "back": "Back to theory"
     },
+    "tour": {
+      "step": "Step {current} of {total}",
+      "skip": "Skip the walkthrough",
+      "restart": "Walkthrough"
+    },
     "hints": {
       "title": "Hints",
       "next": "The next hint opens after one more failed attempt."

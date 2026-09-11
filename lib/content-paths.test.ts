@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lessonFileFor, orderOf, slugOf } from './content-paths';
+import { lessonFileFor, orderOf, slugOf, tourFileFor } from './content-paths';
 
 describe('slugOf', () => {
   it('снимает числовой префикс папки', () => {
@@ -37,5 +37,19 @@ describe('lessonFileFor', () => {
 
   it('без единого текста возвращает null', () => {
     expect(lessonFileFor(['task.json'], 'ru')).toBe(null);
+  });
+});
+
+describe('tourFileFor', () => {
+  it('берёт сценарий нужной локали', () => {
+    expect(tourFileFor(['tour.ru.json', 'tour.en.json'], 'en')).toBe('tour.en.json');
+  });
+
+  it('откатывается на русский', () => {
+    expect(tourFileFor(['tour.ru.json'], 'en')).toBe('tour.ru.json');
+  });
+
+  it('урок без сценария — это null, а не ошибка', () => {
+    expect(tourFileFor(['lesson.ru.mdx', 'task.json'], 'ru')).toBe(null);
   });
 });

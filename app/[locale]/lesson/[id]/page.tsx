@@ -46,6 +46,7 @@ export default async function LessonPage({
   return (
     <LessonClient
       task={parseTask(lesson.task)}
+      tour={lesson.tour}
       starter={lesson.starter}
       title={lesson.meta.title}
       previous={lesson.previous}

@@ -6,7 +6,9 @@ import { LessonHeader } from '@/components/lesson/lesson-header';
 import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
 import { TaskOnDesktop } from '@/components/lesson/task-on-desktop';
 import { TheoryView } from '@/components/lesson/theory-view';
+import { GuidedTour } from '@/components/lesson/guided-tour';
 import { useWideEnough } from '@/components/lesson/use-wide-enough';
+import type { Tour } from '@/lib/tour';
 import {
   alignToolDown,
   digitalInput,
@@ -56,6 +58,8 @@ const EMPTY: Program = { version: 1, body: [] };
 interface LessonProps {
   plugin: RobotPlugin;
   task: Task;
+  /** Сценарий обучения: подсветка кнопок. Урок без него — обычное дело. */
+  tour: Tour | null;
   starter: object;
   /** Заголовок урока из содержания: шапке нужна строка, а не готовый узел. */
   title: string;
@@ -100,7 +104,7 @@ function NarrowLesson({ plugin, title, theory, previous, next }: LessonProps) {
   );
 }
 
-function WideLesson({ plugin, task, starter, title, theory, previous, next }: LessonProps) {
+function WideLesson({ plugin, task, tour, starter, title, theory, previous, next }: LessonProps) {
   const t = useTranslations('lesson');
   const tKey = useTranslations();
   const [fps, setFps] = useState(0);
@@ -125,6 +129,7 @@ function WideLesson({ plugin, task, starter, title, theory, previous, next }: Le
     <Workspace
       plugin={plugin}
       task={task}
+      tour={tour}
       starter={starter}
       title={title}
       theory={theory}
@@ -158,6 +163,7 @@ interface Teaching {
 function Workspace({
   plugin,
   task,
+  tour,
   starter,
   title,
   theory,
@@ -171,6 +177,7 @@ function Workspace({
 }: {
   plugin: RobotPlugin;
   task: Task;
+  tour: Tour | null;
   starter: object;
   title: string;
   theory: ReactNode;
@@ -274,6 +281,11 @@ function Workspace({
 
   const jointNames = useMemo(() => plugin.joints.map((joint) => joint.urdfName), [plugin]);
 
+  // Обучение идёт поверх обоих этапов урока: первый шаг указывает на кнопку
+  // «К заданию», а она живёт на теории.
+  const [touring, setTouring] = useState(tour !== null);
+  const closeTour = useCallback(() => setTouring(false), []);
+
   // Датчик светится по своему входу, а не по собственной проверке «есть ли
   // деталь перед ним»: второй такой расчёт разошёлся бы с миром молча.
   const sensorOn = useMemo(() => {
@@ -296,6 +308,17 @@ function Workspace({
   return (
     <div className="flex h-dvh flex-col bg-surface-0 text-ink">
       <LessonHeader title={title} model={tKey(plugin.displayNameKey)}>
+        {tour !== null && !touring && (
+          <button
+            type="button"
+            data-testid="tour-restart"
+            onClick={() => setTouring(true)}
+            className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
+          >
+            {t('tour.restart')}
+          </button>
+        )}
+
         {!reading && (
           <div className="flex items-center gap-3">
             <button
@@ -425,6 +448,15 @@ function Workspace({
               </p>
             </main>
           }
+        />
+      )}
+
+      {tour !== null && touring && (
+        <GuidedTour
+          tour={tour}
+          program={program}
+          passed={runner.check?.passed === true && runner.status === 'done'}
+          onClose={closeTour}
         />
       )}
     </div>

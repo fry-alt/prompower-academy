@@ -118,9 +118,9 @@ MDX: цифровые входы и выходы, датчик как источ
 
 ## Task 5: Проверка
 
-- [ ] **Step 1: Всё вместе**
+- [x] **Step 1: Всё вместе**
 
 Run: `npm run typecheck && npm test && npx playwright test`
 Expected: PASS.
 
-- [ ] **Step 2: Коммит**
+- [x] **Step 2: Коммит**

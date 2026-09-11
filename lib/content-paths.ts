@@ -21,9 +21,23 @@ export function orderOf(folder: string): number {
 
 /** Файл теории на нужном языке, с откатом на русский. */
 export function lessonFileFor(files: readonly string[], locale: string): string | null {
-  const wanted = `lesson.${locale}.mdx`;
+  return localeFileFor(files, locale, 'lesson', 'mdx');
+}
+
+/** Сценарий обучения на нужном языке. Урок без сценария — обычное дело. */
+export function tourFileFor(files: readonly string[], locale: string): string | null {
+  return localeFileFor(files, locale, 'tour', 'json');
+}
+
+function localeFileFor(
+  files: readonly string[],
+  locale: string,
+  name: string,
+  extension: string,
+): string | null {
+  const wanted = `${name}.${locale}.${extension}`;
   if (files.includes(wanted)) return wanted;
 
-  const fallback = `lesson.${FALLBACK_LOCALE}.mdx`;
+  const fallback = `${name}.${FALLBACK_LOCALE}.${extension}`;
   return files.includes(fallback) ? fallback : null;
 }

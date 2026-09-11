@@ -162,7 +162,11 @@ function nameCategories(workspace: Blockly.WorkspaceSvg): void {
 
   for (const item of toolbox.getToolboxItems()) {
     if (item instanceof Blockly.ToolboxCategory) {
-      item.getDiv()?.setAttribute('title', item.getName());
+      const div = item.getDiv();
+      // Подсказка — человеку, атрибут — обучению: по нему подсветка находит
+      // категорию, не завися от порядка в палитре.
+      div?.setAttribute('title', item.getName());
+      div?.setAttribute('data-category', item.getName());
     }
   }
 }

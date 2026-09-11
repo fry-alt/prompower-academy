@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { jakaZu7 } from '@prompower/robot-plugins';
 import type { Task } from '@prompower/sim-core';
 import type { LessonLink } from '@/components/lesson/lesson-nav';
+import type { Tour } from '@/lib/tour';
 
 /**
  * three.js и разбор URDF живут только в браузере, поэтому рабочее место урока
@@ -18,6 +19,7 @@ const LessonWorkspace = dynamic(
 
 export function LessonClient({
   task,
+  tour,
   starter,
   title,
   theory,
@@ -25,6 +27,8 @@ export function LessonClient({
   next,
 }: {
   task: Task;
+  /** Сценарий обучения урока: подсветка кнопок. Урока без него — обычное дело. */
+  tour: Tour | null;
   starter: object;
   /** Заголовок урока из содержания: шапке нужна строка, а не готовый узел. */
   title: string;
@@ -40,6 +44,7 @@ export function LessonClient({
     <LessonWorkspace
       plugin={jakaZu7}
       task={task}
+      tour={tour}
       starter={starter}
       title={title}
       theory={theory}
