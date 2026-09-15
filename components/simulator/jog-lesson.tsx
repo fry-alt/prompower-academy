@@ -10,7 +10,7 @@ import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
 import { TaskBrief } from '@/components/lesson/task-brief';
 import { TheoryView } from '@/components/lesson/theory-view';
 import type { Tour } from '@/lib/tour';
-import type { RobotBounds } from './fit-robot';
+import { includeScene, type RobotBounds } from './fit-robot';
 import { GhostRobot } from './ghost-robot';
 import { JointPanel } from './joint-panel';
 import { RobotViewer } from './robot-viewer';
@@ -70,6 +70,23 @@ export function JogLesson({
   // Подсказка активной цели в сцене: поза показывается серой копией, точка —
   // меткой. Взятая цель со сцены уходит: показывать в ней больше нечего.
   const active = jog.active === null ? null : (jog.statuses[jog.active]?.goal ?? null);
+
+  // Целевые точки входят в кадр наравне с деталями программного урока. По
+  // одному роботу кадр строить нельзя: метка у края зоны обрезается, стоит
+  // ученику сузить сцену разделителем.
+  const framed = useMemo(
+    () =>
+      includeScene(
+        bounds,
+        task.goals
+          .filter((goal) => goal.type === 'flangeAtPoint')
+          .map((goal) => ({
+            position: goal.point,
+            size: { x: goal.tolerance * 2, y: goal.tolerance * 2, z: goal.tolerance * 2 },
+          })),
+      ),
+    [bounds, task],
+  );
 
   return (
     <div className="flex h-dvh flex-col bg-surface-0 text-ink">
@@ -157,7 +174,7 @@ export function JogLesson({
                 jointNames={jointNames}
                 values={jog.joints}
                 scene={plugin.scene}
-                bounds={bounds}
+                bounds={framed}
                 onFpsSample={onFps}
               >
                 {active?.type === 'jointsAtPose' && (
