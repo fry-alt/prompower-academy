@@ -44,6 +44,11 @@ export const BLOCK_TYPES = {
   repeat: 'pp_repeat',
   branch: 'pp_if',
   comment: 'pp_comment',
+  moveComputed: 'pp_move_computed',
+  number: 'pp_number',
+  variable: 'pp_var',
+  math: 'pp_math',
+  setVar: 'pp_set_var',
 } as const;
 
 /**
@@ -227,6 +232,71 @@ export const BLOCK_DEFINITIONS: readonly object[] = [
     colour: COLORS.control,
     tooltip: 'На робота не влияет, нужна человеку.',
   },
+  {
+    type: BLOCK_TYPES.moveComputed,
+    message0: 'по прямой, мм X %1 Y %2 Z %3',
+    args0: [
+      { type: 'input_value', name: 'X', check: 'Number' },
+      { type: 'input_value', name: 'Y', check: 'Number' },
+      { type: 'input_value', name: 'Z', check: 'Number' },
+    ],
+    inputsInline: true,
+    previousStatement: null,
+    nextStatement: null,
+    colour: COLORS.move,
+    tooltip: 'Движение по прямой, координаты считаются на ходу. Инструмент смотрит вниз.',
+  },
+  {
+    type: BLOCK_TYPES.number,
+    message0: '%1',
+    args0: [{ type: 'field_number', name: 'VALUE', value: 0 }],
+    output: 'Number',
+    colour: COLORS.calculate,
+    tooltip: 'Число',
+  },
+  {
+    type: BLOCK_TYPES.variable,
+    message0: '%1',
+    args0: [{ type: 'field_input', name: 'NAME', text: 'i' }],
+    output: 'Number',
+    colour: COLORS.variable,
+    tooltip: 'Значение переменной',
+  },
+  {
+    type: BLOCK_TYPES.math,
+    message0: '%1 %2 %3',
+    args0: [
+      { type: 'input_value', name: 'LEFT', check: 'Number' },
+      {
+        type: 'field_dropdown',
+        name: 'OP',
+        options: [
+          ['+', '+'],
+          ['−', '-'],
+          ['×', '*'],
+          ['÷', '/'],
+        ],
+      },
+      { type: 'input_value', name: 'RIGHT', check: 'Number' },
+    ],
+    inputsInline: true,
+    output: 'Number',
+    colour: COLORS.calculate,
+    tooltip: 'Арифметика',
+  },
+  {
+    type: BLOCK_TYPES.setVar,
+    message0: 'задать %1 = %2',
+    args0: [
+      { type: 'field_input', name: 'NAME', text: 'i' },
+      { type: 'input_value', name: 'VALUE', check: 'Number' },
+    ],
+    inputsInline: true,
+    previousStatement: null,
+    nextStatement: null,
+    colour: COLORS.variable,
+    tooltip: 'Записать значение в переменную',
+  },
 ];
 
 /**
@@ -247,6 +317,7 @@ export const TOOLBOX = {
       contents: [
         { kind: 'block', type: BLOCK_TYPES.moveJoint },
         { kind: 'block', type: BLOCK_TYPES.moveLinear },
+        { kind: 'block', type: BLOCK_TYPES.moveComputed },
         { kind: 'block', type: BLOCK_TYPES.setSpeed },
       ],
     },
@@ -278,6 +349,18 @@ export const TOOLBOX = {
         { kind: 'block', type: BLOCK_TYPES.repeat },
         { kind: 'block', type: BLOCK_TYPES.branch },
         { kind: 'block', type: BLOCK_TYPES.comment },
+      ],
+    },
+    {
+      kind: 'category',
+      name: 'Переменные',
+      colour: COLORS.variable,
+      cssconfig: { icon: 'ppIconVar' },
+      contents: [
+        { kind: 'block', type: BLOCK_TYPES.setVar },
+        { kind: 'block', type: BLOCK_TYPES.variable },
+        { kind: 'block', type: BLOCK_TYPES.number },
+        { kind: 'block', type: BLOCK_TYPES.math },
       ],
     },
   ],
