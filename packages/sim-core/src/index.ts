@@ -43,7 +43,13 @@ export { createPlanner, type PlannerOptions } from './interpreter/planner';
 
 export { distanceToObject, nearestGraspable } from './world/grasp';
 
-export { checkTask, earnedHints, type CheckResult } from './validators/check';
+export {
+  checkGoals,
+  checkTask,
+  earnedHints,
+  type CheckResult,
+  type GoalStatus,
+} from './validators/check';
 
 export {
   parseTask,
@@ -52,6 +58,7 @@ export {
   type Goal,
   type Hint,
   type Task,
+  type TaskMode,
   type TaskWorld,
 } from './validators/task';
 

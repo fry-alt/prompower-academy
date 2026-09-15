@@ -23,6 +23,28 @@ export interface CheckResult {
   readonly failures: readonly string[];
 }
 
+/** Одна цель задания и то, что мешает её засчитать. */
+export interface GoalStatus {
+  readonly goal: Goal;
+  /** Текст провала или `null`, если цель достигнута. */
+  readonly failure: string | null;
+}
+
+/**
+ * Статус каждой цели по отдельности.
+ *
+ * Экрану урока нужна отметка против строки, а не общий вердикт в конце: в
+ * ручном задании цели берут одну за другой и видят это сразу.
+ */
+export function checkGoals(
+  task: Task,
+  world: WorldState,
+  log: EventLog,
+  chain: KinematicChain,
+): readonly GoalStatus[] {
+  return task.goals.map((goal) => ({ goal, failure: checkGoal(goal, world, log, chain) }));
+}
+
 export function checkTask(
   task: Task,
   program: Program,
@@ -31,7 +53,7 @@ export function checkTask(
   chain: KinematicChain,
 ): CheckResult {
   const failures = [
-    ...task.goals.map((goal) => checkGoal(goal, world, log, chain)),
+    ...checkGoals(task, world, log, chain).map((status) => status.failure),
     ...task.constraints.map((constraint) => checkConstraint(constraint, program)),
   ].filter((failure): failure is string => failure !== null);
 

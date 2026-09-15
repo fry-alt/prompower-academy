@@ -3,7 +3,7 @@ import type { Program } from '../program/ast';
 import { EMPTY_CHAIN, type KinematicChain } from '../kinematics/chain';
 import { fromTranslation, IDENTITY } from '../kinematics/transform';
 import { createWorld, graspObject, moveObject, releaseObject, type EventLog } from '../world/state';
-import { checkTask, earnedHints } from './check';
+import { checkGoals, checkTask, earnedHints } from './check';
 import { parseTask, type Task } from './task';
 
 const ZERO = { x: 0, y: 0, z: 0 };
@@ -286,5 +286,26 @@ describe('цель «фланец в точке»', () => {
 
     expect(result.passed).toBe(false);
     expect(result.failures[0]).toBe('Инструмент в 1414 мм от точки: X 1000, Y 0, Z 0 мм.');
+  });
+});
+
+describe('checkGoals', () => {
+  it('отдаёт статус по каждой цели, а не общий вердикт', () => {
+    const statuses = checkGoals(
+      TASK,
+      solved(),
+      [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }],
+      EMPTY_CHAIN,
+    );
+
+    expect(statuses).toHaveLength(2);
+    expect(statuses.map((status) => status.failure)).toEqual([null, null]);
+  });
+
+  it('невыполненная цель приносит с собой объяснение', () => {
+    const statuses = checkGoals(TASK, world(), [], EMPTY_CHAIN);
+
+    expect(statuses[0]!.goal.type).toBe('objectInZone');
+    expect(statuses[0]!.failure).toMatch(/оказалась в зоне «zone-a»/);
   });
 });
