@@ -57,7 +57,7 @@
 - Modify: `packages/sim-core/src/validators/task.ts`
 - Test: `packages/sim-core/src/validators/task.test.ts`
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 Добавить в конец `packages/sim-core/src/validators/task.test.ts`:
 
@@ -90,12 +90,12 @@ describe('запрет входить в зону', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/task.test.ts`
 Expected: FAIL — «неизвестное ограничение «keepOut»».
 
-- [ ] **Step 3: Реализовать**
+- [x] **Step 3: Реализовать**
 
 В `packages/sim-core/src/validators/task.ts` расширить тип:
 
@@ -172,18 +172,18 @@ function about(constraint: Constraint): 'program' | 'motion' {
 
 Старую проверку `if (mode === 'jog' && constraints.length > 0)` удалить целиком.
 
-- [ ] **Step 4: Прогнать тесты**
+- [x] **Step 4: Прогнать тесты**
 
 Run: `npx vitest run packages/sim-core/src/validators/`
 Expected: PASS.
 
-- [ ] **Step 5: Прогнать весь набор и typecheck**
+- [x] **Step 5: Прогнать весь набор и typecheck**
 
 Run: `npm test` затем `npm run typecheck`
 Expected: оба чисто. TypeScript назовёт `checkConstraint` в `check.ts`, если
 `switch` там перестал быть исчерпывающим, — это чинится следующей задачей.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add packages/sim-core/src/validators/
@@ -198,7 +198,7 @@ git commit -m "feat: запрет входить в зону как ограни
 - Modify: `packages/sim-core/src/validators/check.ts`, `packages/sim-core/src/index.ts`
 - Test: `packages/sim-core/src/validators/check.test.ts`
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 Добавить в конец `packages/sim-core/src/validators/check.test.ts`:
 
@@ -269,12 +269,12 @@ describe('запрет входить в зону', () => {
 
 Дописать `checkKeepOuts` в импорт из `./check`.
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/check.test.ts`
 Expected: FAIL — `checkKeepOuts` не экспортируется.
 
-- [ ] **Step 3: Реализовать**
+- [x] **Step 3: Реализовать**
 
 В `check.ts` дописать импорты:
 
@@ -416,17 +416,17 @@ function checkConstraint(constraint: Constraint, program: Program): string | nul
 }
 ```
 
-- [ ] **Step 4: Открыть наружу**
+- [x] **Step 4: Открыть наружу**
 
 В `packages/sim-core/src/index.ts` дописать `checkKeepOuts` в экспорт из
 `./validators/check`.
 
-- [ ] **Step 5: Прогнать всё**
+- [x] **Step 5: Прогнать всё**
 
 Run: `npm test` затем `npm run typecheck`
 Expected: PASS, typecheck чисто.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add packages/sim-core
@@ -440,7 +440,7 @@ git commit -m "feat: проверка запрета по точкам суст�
 **Files:**
 - Modify: `components/simulator/use-jog-task.ts`
 
-- [ ] **Step 1: Реализовать**
+- [x] **Step 1: Реализовать**
 
 В `components/simulator/use-jog-task.ts` добавить нарушение в состояние. Импорт:
 
@@ -540,12 +540,12 @@ interface JogState {
   };
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/use-jog-task.ts
@@ -561,7 +561,7 @@ git commit -m "feat: нарушение запрета держится до с�
 - Create: `components/simulator/keep-out-zone.tsx`
 - Modify: `components/simulator/jog-lesson.tsx`
 
-- [ ] **Step 1: Строка нарушения в условии задания**
+- [x] **Step 1: Строка нарушения в условии задания**
 
 В `components/lesson/task-brief.tsx` добавить пропс и его отрисовку. В список
 пропсов:
@@ -590,7 +590,7 @@ git commit -m "feat: нарушение запрета держится до с�
       )}
 ```
 
-- [ ] **Step 2: Строки интерфейса**
+- [x] **Step 2: Строки интерфейса**
 
 В `messages/ru.json` в раздел `lesson` добавить:
 
@@ -607,7 +607,7 @@ git commit -m "feat: нарушение запрета держится до с�
 Run: `node -e "require('./messages/ru.json'); require('./messages/en.json'); console.log('ok')"`
 Expected: `ok`
 
-- [ ] **Step 3: Зона запрета в сцене**
+- [x] **Step 3: Зона запрета в сцене**
 
 Создать `components/simulator/keep-out-zone.tsx`:
 
@@ -648,7 +648,7 @@ export function KeepOutZone({ zone }: { zone: Zone }) {
 }
 ```
 
-- [ ] **Step 4: Подключить к уроку**
+- [x] **Step 4: Подключить к уроку**
 
 В `components/simulator/jog-lesson.tsx` импортировать зону:
 
@@ -686,12 +686,12 @@ import { KeepOutZone } from './keep-out-zone';
               violation={jog.violation}
 ```
 
-- [ ] **Step 5: Проверить сборку**
+- [x] **Step 5: Проверить сборку**
 
 Run: `npm run typecheck` затем `npm run build`
 Expected: оба чисто.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add components messages
@@ -707,7 +707,7 @@ git commit -m "feat: запретная зона в сцене и нарушен
 - Create: `content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost/lesson.ru.mdx`
 - Create: `tests/sim/lesson-two.test.ts`
 
-- [ ] **Step 1: Написать падающий тест содержания**
+- [x] **Step 1: Написать падающий тест содержания**
 
 Создать `tests/sim/lesson-two.test.ts`:
 
@@ -803,12 +803,12 @@ describe('задание «безопасность»', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run tests/sim/lesson-two.test.ts`
 Expected: FAIL — `ENOENT`, файла задания нет.
 
-- [ ] **Step 3: Написать задание**
+- [x] **Step 3: Написать задание**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost/task.json`:
 
@@ -838,12 +838,12 @@ Expected: FAIL — `ENOENT`, файла задания нет.
 }
 ```
 
-- [ ] **Step 4: Прогнать тест содержания**
+- [x] **Step 4: Прогнать тест содержания**
 
 Run: `npx vitest run tests/sim/lesson-two.test.ts`
 Expected: PASS, 6 тестов.
 
-- [ ] **Step 5: Написать теорию**
+- [x] **Step 5: Написать теорию**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost/lesson.ru.mdx`:
 
@@ -917,13 +917,13 @@ minutes: 4
 действие.
 ```
 
-- [ ] **Step 6: Проверить сборкой**
+- [x] **Step 6: Проверить сборкой**
 
 Run: `npm run build`
 Expected: сборка проходит, среди статических страниц есть
 `/ru/lesson/bezopasnost`.
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost tests/sim/lesson-two.test.ts
@@ -937,7 +937,7 @@ git commit -m "feat: урок 2 — теория о безопасности и 
 **Files:**
 - Create: `content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost/tour.ru.json`
 
-- [ ] **Step 1: Написать сценарий**
+- [x] **Step 1: Написать сценарий**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost/tour.ru.json`:
 
@@ -958,7 +958,7 @@ git commit -m "feat: урок 2 — теория о безопасности и 
 }
 ```
 
-- [ ] **Step 2: Коммит**
+- [x] **Step 2: Коммит**
 
 ```bash
 git add content/courses/osnovy-raboty-s-kobotom/lessons/02-bezopasnost/tour.ru.json
@@ -972,7 +972,7 @@ git commit -m "feat: обучение урока 2 объясняет зону"
 **Files:**
 - Create: `tests/e2e/lesson-two.spec.ts`
 
-- [ ] **Step 1: Написать тест**
+- [x] **Step 1: Написать тест**
 
 Создать `tests/e2e/lesson-two.spec.ts`:
 
@@ -1047,13 +1047,13 @@ test('сброс снимает нарушение, и обход доводит
 });
 ```
 
-- [ ] **Step 2: Прогнать**
+- [x] **Step 2: Прогнать**
 
 Run: `npx playwright test tests/e2e/lesson-two.spec.ts`
 Expected: PASS, 5 тестов. Первый прогон собирает приложение — это несколько
 минут.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add tests/e2e/lesson-two.spec.ts
@@ -1067,7 +1067,7 @@ git commit -m "test: урок 2 ловит нарушение и снимает 
 **Files:**
 - Modify: `tests/e2e/course.spec.ts`, `README.md`
 
-- [ ] **Step 1: Поправить проверку карты курса**
+- [x] **Step 1: Поправить проверку карты курса**
 
 В `tests/e2e/course.spec.ts` тест «курс начинается с урока о коботе» считает
 уроки: их стало пять. Заменить ожидание длины:
@@ -1082,7 +1082,7 @@ git commit -m "test: урок 2 ловит нарушение и снимает 
   expect(titles[1]).toBe('Безопасность');
 ```
 
-- [ ] **Step 2: Обновить README**
+- [x] **Step 2: Обновить README**
 
 В разделе «Что уже работает» дописать после абзаца об уроке 1:
 
@@ -1093,21 +1093,21 @@ git commit -m "test: урок 2 ловит нарушение и снимает 
 возвращает робота в стартовую позу.
 ```
 
-- [ ] **Step 3: Полная проверка**
+- [x] **Step 3: Полная проверка**
 
 Run: `npm run typecheck`, затем `npm test`, затем `npm run build`, затем
 `npm run test:e2e`
 Expected: typecheck чисто; Vitest зелёный; сборка проходит; Playwright зелёный
 целиком, включая уроки 1, 3, 4 и 5 — их задания не менялись.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add README.md tests/e2e/course.spec.ts
 git commit -m "docs: в курсе появился урок о безопасности"
 ```
 
-- [ ] **Step 5: Отметить шаги плана и закрыть ветку**
+- [x] **Step 5: Отметить шаги плана и закрыть ветку**
 
 Проставить галочки в этом файле, закоммитить, затем перейти к скиллу
 `superpowers:finishing-a-development-branch`.

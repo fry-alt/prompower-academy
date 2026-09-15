@@ -16,8 +16,8 @@ const LESSON = '/ru/lesson/bezopasnost';
  * Порядок в обходе значим: база поворачивается последней. Повернуть её первой
  * значит пронести сложенную руку прямо над зоной — что урок и должен ловить.
  */
-const DETOUR = { joint_2: '10', joint_3: '50', joint_5: '90', joint_1: '-60' };
-const INSIDE = { joint_1: '-40', joint_2: '10', joint_3: '70', joint_5: '80' };
+const DETOUR = { joint_2: '0', joint_3: '50', joint_5: '80', joint_1: '-60' };
+const INSIDE = { joint_1: '-40', joint_2: '0', joint_3: '60', joint_5: '80' };
 
 async function setJoints(page: Page, values: Record<string, string>): Promise<void> {
   for (const [joint, value] of Object.entries(values)) {

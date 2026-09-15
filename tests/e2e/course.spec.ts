@@ -15,7 +15,8 @@ test('курс начинается с урока о коботе', async ({ pag
   // что карта показывает именно его, а не порядок чтения каталога.
   const titles = await page.getByTestId('lesson-title').allInnerTexts();
   expect(titles[0]).toBe('Знакомство с коботом');
-  expect(titles).toHaveLength(4);
+  expect(titles[1]).toBe('Безопасность');
+  expect(titles).toHaveLength(5);
 });
 
 test('из карты курса открывается урок', async ({ page }) => {
