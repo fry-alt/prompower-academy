@@ -1,8 +1,9 @@
 import type { Program, Statement } from '../program/ast';
 import type { EventLog, Vec3, WorldState } from '../world/state';
-import { flangePose, type KinematicChain } from '../kinematics/chain';
+import { flangePose, jointFrames, type KinematicChain } from '../kinematics/chain';
 import { normalizeAngle } from '../kinematics/joint-limits';
-import { zoneContaining } from '../world/aabb';
+import { translationOf } from '../kinematics/transform';
+import { distanceToBox, zoneContaining } from '../world/aabb';
 import type { Constraint, Goal, Hint, Task } from './task';
 
 /**
@@ -45,6 +46,24 @@ export function checkGoals(
   return task.goals.map((goal) => ({ goal, failure: checkGoal(goal, world, log, chain) }));
 }
 
+/**
+ * Нарушенные запреты движения.
+ *
+ * Отдельно от `checkTask` потому, что запрет проверяют не в конце, а всё время:
+ * ручной урок спрашивает об этом на каждое движение ползунка.
+ */
+export function checkKeepOuts(
+  task: Task,
+  world: WorldState,
+  chain: KinematicChain,
+): readonly string[] {
+  return task.constraints
+    .map((constraint) =>
+      constraint.type === 'keepOut' ? checkKeepOut(constraint, world, chain) : null,
+    )
+    .filter((failure): failure is string => failure !== null);
+}
+
 export function checkTask(
   task: Task,
   program: Program,
@@ -54,10 +73,52 @@ export function checkTask(
 ): CheckResult {
   const failures = [
     ...checkGoals(task, world, log, chain).map((status) => status.failure),
+    ...checkKeepOuts(task, world, chain),
     ...task.constraints.map((constraint) => checkConstraint(constraint, program)),
   ].filter((failure): failure is string => failure !== null);
 
   return { passed: failures.length === 0, failures };
+}
+
+function checkKeepOut(
+  constraint: Constraint & { type: 'keepOut' },
+  world: WorldState,
+  chain: KinematicChain,
+): string | null {
+  const zone = world.zones[constraint.zone];
+  if (zone === undefined) return `На сцене нет зоны «${constraint.zone}».`;
+
+  const points = robotPoints(world, chain);
+  if (points === null) return jointsMismatch(world, chain);
+
+  return points.some((point) => distanceToBox(point, zone) === 0)
+    ? `Робот вошёл в зону «${zone.id}» — туда заходить нельзя.`
+    : null;
+}
+
+/**
+ * Точки робота: начала суставов и фланец.
+ *
+ * Звено между двумя точками не проверяется — очень тонкая зона между суставами
+ * пройдёт незамеченной. Это та же граница, что у всей физики проекта (§13
+ * брифа): кинематика и AABB — потолок, а зона урока заведомо крупнее звена.
+ */
+function robotPoints(world: WorldState, chain: KinematicChain): Vec3[] | null {
+  if (world.joints.length !== chain.joints.length) return null;
+
+  const flange = flangePose(chain, world.joints);
+  return [
+    ...jointFrames(chain, world.joints).map((frame) => translationOf(frame)),
+    { x: flange.x, y: flange.y, z: flange.z },
+  ];
+}
+
+/** Мир и модель разошлись числом суставов: это ошибка сборки, а не поза. */
+function jointsMismatch(world: WorldState, chain: KinematicChain): string {
+  return (
+    `Робот собран с ${world.joints.length} углами, а у модели ${chain.joints.length} суставов: ` +
+    'положение инструмента не посчитать.'
+  );
 }
 
 /** Возвращает текст провала или `null`, если цель достигнута. */
@@ -96,12 +157,7 @@ function checkFlangeAtPoint(
   // Расхождение объясняется словами, а не исключением из кинематики: проверка
   // зовётся на каждое движение ползунка прямо в отрисовке, и брошенная ошибка
   // унесла бы с собой весь экран урока.
-  if (world.joints.length !== chain.joints.length) {
-    return (
-      `Робот собран с ${world.joints.length} углами, а у модели ${chain.joints.length} суставов: ` +
-      'положение инструмента не посчитать.'
-    );
-  }
+  if (world.joints.length !== chain.joints.length) return jointsMismatch(world, chain);
 
   const actual = flangePose(chain, world.joints);
   const gap = distance(actual, goal.point);
@@ -150,10 +206,9 @@ function checkJointsAtPose(
   );
 }
 
-/** Градусы для человека: минус типографский, как и в миллиметрах. */
+/** Градусы из радианов: на экране суставы подписаны градусами. */
 function degrees(radians: number): string {
-  const value = Math.round((radians * 180) / Math.PI);
-  return value < 0 ? `−${Math.abs(value)}` : String(value);
+  return rounded((radians * 180) / Math.PI);
 }
 
 /**
@@ -181,10 +236,15 @@ function distance(from: Vec3, to: Vec3): number {
   return Math.hypot(from.x - to.x, from.y - to.y, from.z - to.z);
 }
 
-/** Минус здесь типографский: это текст для человека, а не выражение. */
+/** Миллиметры из метров: числа в тексте те же, что ученик набирает в блоке. */
 function millimetres(metres: number): string {
-  const value = Math.round(metres * 1000);
-  return value < 0 ? `−${Math.abs(value)}` : String(value);
+  return rounded(metres * 1000);
+}
+
+/** Минус здесь типографский: это текст для человека, а не выражение. */
+function rounded(value: number): string {
+  const whole = Math.round(value);
+  return whole < 0 ? `−${Math.abs(whole)}` : String(whole);
 }
 
 function checkObjectInZone(

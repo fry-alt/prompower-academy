@@ -3,7 +3,7 @@ import type { Program } from '../program/ast';
 import { EMPTY_CHAIN, type KinematicChain } from '../kinematics/chain';
 import { fromTranslation, IDENTITY } from '../kinematics/transform';
 import { createWorld, graspObject, moveObject, releaseObject, type EventLog } from '../world/state';
-import { checkGoals, checkTask, earnedHints } from './check';
+import { checkGoals, checkKeepOuts, checkTask, earnedHints } from './check';
 import { parseTask, type Task } from './task';
 
 const ZERO = { x: 0, y: 0, z: 0 };
@@ -314,5 +314,73 @@ describe('checkGoals', () => {
 
     expect(statuses[0]!.goal.type).toBe('objectInZone');
     expect(statuses[0]!.failure).toMatch(/оказалась в зоне «zone-a»/);
+  });
+});
+
+describe('запрет входить в зону', () => {
+  // Цепь из одного звена: фланец в метре по X, первый сустав его поворачивает.
+  const CHAIN: KinematicChain = {
+    joints: [
+      {
+        name: 'joint_1',
+        limit: { name: 'joint_1', type: 'revolute', lower: -Math.PI, upper: Math.PI },
+        maxSpeed: 1,
+        origin: IDENTITY,
+        axis: { x: 0, y: 0, z: 1 },
+      },
+    ],
+    baseOrigin: IDENTITY,
+    toolOrigin: fromTranslation({ x: 1, y: 0, z: 0 }),
+  };
+
+  const KEEP_OUT: Task = parseTask({
+    ...RAW_TASK,
+    mode: 'jog',
+    world: {
+      objects: [],
+      zones: [
+        { id: 'зона оператора', position: { x: 1, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+      ],
+    },
+    goals: [{ type: 'gripperState', state: 'open' }],
+    constraints: [{ type: 'keepOut', zone: 'зона оператора' }],
+    hints: [],
+  });
+
+  const standing = (joints: readonly number[]) =>
+    createWorld({ joints: [...joints], zones: [...KEEP_OUT.world.zones] });
+
+  it('молчит, пока робот снаружи', () => {
+    // Сустав повёрнут на 90°: фланец ушёл на ось Y, зона осталась по X.
+    expect(checkKeepOuts(KEEP_OUT, standing([Math.PI / 2]), CHAIN)).toEqual([]);
+  });
+
+  it('называет зону, в которую вошёл робот', () => {
+    expect(checkKeepOuts(KEEP_OUT, standing([0]), CHAIN)).toEqual([
+      'Робот вошёл в зону «зона оператора» — туда заходить нельзя.',
+    ]);
+  });
+
+  it('пропавшая со сцены зона — это ошибка содержания, а не тишина', () => {
+    const lost: Task = parseTask({
+      ...RAW_TASK,
+      mode: 'jog',
+      world: { objects: [], zones: [] },
+      goals: [{ type: 'gripperState', state: 'open' }],
+      constraints: [{ type: 'keepOut', zone: 'зона оператора' }],
+      hints: [],
+    });
+
+    // Мир собран по этому же заданию: зоны в нём нет ни в списке, ни на сцене.
+    const empty = createWorld({ joints: [0], zones: [...lost.world.zones] });
+
+    expect(checkKeepOuts(lost, empty, CHAIN)[0]).toBe('На сцене нет зоны «зона оператора».');
+  });
+
+  it('попадает в общий вердикт задания', () => {
+    const result = checkTask(KEEP_OUT, SHORT, standing([0]), [], CHAIN);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContain('Робот вошёл в зону «зона оператора» — туда заходить нельзя.');
   });
 });

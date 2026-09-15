@@ -45,6 +45,7 @@ export { distanceToObject, nearestGraspable } from './world/grasp';
 
 export {
   checkGoals,
+  checkKeepOuts,
   checkTask,
   earnedHints,
   type CheckResult,
