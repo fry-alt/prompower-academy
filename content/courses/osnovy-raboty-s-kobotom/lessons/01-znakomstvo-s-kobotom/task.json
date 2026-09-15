@@ -1,0 +1,20 @@
+{
+  "id": "znakomstvo",
+  "mode": "jog",
+  "world": {
+    "objects": []
+  },
+  "goals": [
+    {
+      "type": "jointsAtPose",
+      "joints": [0.3491, 0.5236, 1.3963, 0, 1.2217, 0],
+      "tolerance": 0.0524
+    },
+    {
+      "type": "flangeAtPoint",
+      "point": { "x": 0.43, "y": 0.095, "z": 0.4 },
+      "tolerance": 0.04
+    }
+  ],
+  "hints": []
+}
