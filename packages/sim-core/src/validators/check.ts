@@ -1,5 +1,6 @@
 import type { Program, Statement } from '../program/ast';
 import type { EventLog, Vec3, WorldState } from '../world/state';
+import { normalizeAngle } from '../kinematics/joint-limits';
 import { zoneContaining } from '../world/aabb';
 import type { Constraint, Goal, Hint, Task } from './task';
 
@@ -44,7 +45,52 @@ function checkGoal(goal: Goal, world: WorldState, log: EventLog): string | null 
       return checkGripperState(goal, world);
     case 'pointsVisited':
       return checkPointsVisited(goal, log);
+    case 'jointsAtPose':
+      return checkJointsAtPose(goal, world);
   }
+}
+
+/**
+ * Поза против текущих углов.
+ *
+ * Разница считается через `normalizeAngle`: сустав, провернувшийся на полный
+ * оборот, стоит там же, где стоял, и ученик, который до этого дошёл, прав.
+ *
+ * Называется один сустав — тот, что дальше всех. Список из шести строк ученику
+ * читать нечем, а чинить всё равно надо с худшего.
+ */
+function checkJointsAtPose(
+  goal: Goal & { type: 'jointsAtPose' },
+  world: WorldState,
+): string | null {
+  if (goal.joints.length > world.joints.length) {
+    return `Поза задания описывает ${goal.joints.length} суставов, а у робота их ${world.joints.length}.`;
+  }
+
+  let worst = -1;
+  let error = 0;
+
+  goal.joints.forEach((target, index) => {
+    const actual = world.joints[index] ?? 0;
+    const gap = Math.abs(normalizeAngle(actual - target));
+    if (gap > error) {
+      error = gap;
+      worst = index;
+    }
+  });
+
+  if (worst === -1 || error <= goal.tolerance) return null;
+
+  return (
+    `Сустав ${worst + 1} не на месте: нужно ${degrees(goal.joints[worst]!)}°, ` +
+    `сейчас ${degrees(world.joints[worst] ?? 0)}° — разница ${degrees(error)}°.`
+  );
+}
+
+/** Градусы для человека: минус типографский, как и в миллиметрах. */
+function degrees(radians: number): string {
+  const value = Math.round((radians * 180) / Math.PI);
+  return value < 0 ? `−${Math.abs(value)}` : String(value);
 }
 
 /**

@@ -210,3 +210,38 @@ describe('earnedHints', () => {
     expect(earnedHints(shuffled, 4).map((hint) => hint.text)).toEqual(['первая', 'вторая']);
   });
 });
+
+describe('цель «поза суставов»', () => {
+  const TARGET = [0, 1.571, 1.571, 0, 1.571, 0];
+
+  const POSE: Task = parseTask({
+    ...RAW_TASK,
+    goals: [{ type: 'jointsAtPose', joints: TARGET, tolerance: 0.05 }],
+    constraints: [],
+  });
+
+  const standing = (joints: readonly number[]) =>
+    createWorld({ joints: [...joints], zones: [...POSE.world.zones] });
+
+  it('засчитывает точное попадание', () => {
+    expect(checkTask(POSE, SHORT, standing(TARGET), []).passed).toBe(true);
+  });
+
+  it('промах внутри допуска — это попадание', () => {
+    const close = TARGET.map((value, index) => (index === 1 ? value + 0.04 : value));
+    expect(checkTask(POSE, SHORT, standing(close), []).passed).toBe(true);
+  });
+
+  it('называет сустав, который дальше всех от цели', () => {
+    const off = TARGET.map((value, index) => (index === 2 ? value + 0.35 : value));
+    const result = checkTask(POSE, SHORT, standing(off), []);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures[0]).toBe('Сустав 3 не на месте: нужно 90°, сейчас 110° — разница 20°.');
+  });
+
+  it('полный оборот — та же поза', () => {
+    const wrapped = TARGET.map((value, index) => (index === 0 ? value + Math.PI * 2 : value));
+    expect(checkTask(POSE, SHORT, standing(wrapped), []).passed).toBe(true);
+  });
+});

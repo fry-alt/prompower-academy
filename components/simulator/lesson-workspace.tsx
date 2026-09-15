@@ -499,6 +499,8 @@ function goalText(goal: Goal, t: ReturnType<typeof useTranslations<'lesson'>>): 
       return t('goal.gripperState', { state: t(`gripper.${goal.state}`) });
     case 'pointsVisited':
       return t('goal.pointsVisited', { count: goal.points.length });
+    case 'jointsAtPose':
+      return t('goal.jointsAtPose');
   }
 }
 

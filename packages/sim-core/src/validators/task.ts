@@ -21,6 +21,14 @@ export type Goal =
       readonly points: readonly Vec3[];
       /** Насколько близко нужно подойти, метры. */
       readonly tolerance: number;
+    }
+  /** Робот стоит в заданной позе: каждый сустав в пределах допуска. */
+  | {
+      readonly type: 'jointsAtPose';
+      /** Углы в радианах, по порядку суставов плагина. */
+      readonly joints: readonly number[];
+      /** Допуск по каждому суставу, радианы. */
+      readonly tolerance: number;
     };
 
 export type Constraint = { readonly type: 'maxStatements'; readonly value: number };
@@ -224,22 +232,37 @@ function parseGoal(input: unknown, path: string): Goal {
         throw new TaskParseError(`${path}.points`, 'нужна хотя бы одна точка');
       }
 
-      // Допуск обязателен: подразумевать его молча значит однажды поменять
-      // значение и незаметно сломать все уроки, которые на него опирались.
-      const tolerance = asNumber(record['tolerance'], `${path}.tolerance`);
-      if (tolerance <= 0) {
-        throw new TaskParseError(
-          `${path}.tolerance`,
-          `допуск должен быть больше нуля, получено ${tolerance}`,
-        );
+      return { type, points, tolerance: parseTolerance(record['tolerance'], `${path}.tolerance`) };
+    }
+
+    case 'jointsAtPose': {
+      const joints = asArray(record['joints'], `${path}.joints`).map((value, index) =>
+        asNumber(value, `${path}.joints[${index}]`),
+      );
+      if (joints.length === 0) {
+        throw new TaskParseError(`${path}.joints`, 'поза без суставов ничего не задаёт');
       }
 
-      return { type, points, tolerance };
+      return { type, joints, tolerance: parseTolerance(record['tolerance'], `${path}.tolerance`) };
     }
 
     default:
       throw new TaskParseError(path, `неизвестная цель «${type}»`);
   }
+}
+
+/**
+ * Допуск обязателен у всех целей, где он есть.
+ *
+ * Подразумевать его молча значит однажды поменять значение и незаметно сломать
+ * все уроки, которые на него опирались.
+ */
+function parseTolerance(input: unknown, path: string): number {
+  const tolerance = asNumber(input, path);
+  if (tolerance <= 0) {
+    throw new TaskParseError(path, `допуск должен быть больше нуля, получено ${tolerance}`);
+  }
+  return tolerance;
 }
 
 function parseConstraint(input: unknown, path: string): Constraint {

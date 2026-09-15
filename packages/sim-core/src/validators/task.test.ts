@@ -32,3 +32,29 @@ describe('режим задания', () => {
     expect(task.constraints).toEqual([{ type: 'maxStatements', value: 5 }]);
   });
 });
+
+describe('цель «поза суставов»', () => {
+  const goal = { type: 'jointsAtPose', joints: [0, 1.5, 0, 0, 0, 0], tolerance: 0.05 };
+
+  it('разбирается', () => {
+    expect(parseTask({ ...MINIMAL, goals: [goal] }).goals[0]).toEqual(goal);
+  });
+
+  it('поза без суставов ничего не задаёт', () => {
+    expect(() => parseTask({ ...MINIMAL, goals: [{ ...goal, joints: [] }] })).toThrow(
+      /поза без суставов/,
+    );
+  });
+
+  it('допуск обязателен', () => {
+    expect(() => parseTask({ ...MINIMAL, goals: [{ type: 'jointsAtPose', joints: [0] }] })).toThrow(
+      /task\.goals\[0\]\.tolerance/,
+    );
+  });
+
+  it('нулевой допуск недостижим и потому отвергается', () => {
+    expect(() => parseTask({ ...MINIMAL, goals: [{ ...goal, tolerance: 0 }] })).toThrow(
+      /больше нуля/,
+    );
+  });
+});
