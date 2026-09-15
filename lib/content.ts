@@ -100,7 +100,7 @@ export async function loadLesson(slug: string, locale: string): Promise<Lesson |
       meta,
       theory: content,
       task: JSON.parse(await readFile(join(root, 'task.json'), 'utf8')) as unknown,
-      starter: JSON.parse(await readFile(join(root, 'starter.json'), 'utf8')) as object,
+      starter: await loadStarter(root),
       tour: await loadTour(root, files, locale),
       previous: course.lessons[index - 1] ?? null,
       next: course.lessons[index + 1] ?? null,
@@ -157,6 +157,21 @@ async function readMeta(root: string, folder: string, locale: string): Promise<L
 async function subdirectories(path: string): Promise<string[]> {
   const entries = await readdir(path, { withFileTypes: true });
   return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+}
+
+/**
+ * Стартовая программа урока.
+ *
+ * Понятие программного урока: в ручном задании программы нет вовсе, и файла
+ * рядом с ним не лежит. Пустой холст — честный ответ на его отсутствие.
+ */
+async function loadStarter(root: string): Promise<object> {
+  try {
+    return JSON.parse(await readFile(join(root, 'starter.json'), 'utf8')) as object;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    throw error;
+  }
 }
 
 /**
