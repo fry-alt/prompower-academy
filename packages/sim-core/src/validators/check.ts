@@ -233,8 +233,13 @@ function checkGripperState(
  *
  * Иначе цикл на десять витков выглядел бы как десять инструкций, и требование
  * «уложись в 12 блоков» наказывало бы ровно за то, чему урок учит.
+ *
+ * Запреты движения сюда не попадают: их проверяет `checkKeepOuts`, и программа
+ * им не нужна.
  */
 function checkConstraint(constraint: Constraint, program: Program): string | null {
+  if (constraint.type !== 'maxStatements') return null;
+
   const count = countStatements(program.body);
   if (count <= constraint.value) return null;
 

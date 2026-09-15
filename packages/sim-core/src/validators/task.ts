@@ -45,7 +45,10 @@ export type Goal =
       readonly tolerance: number;
     };
 
-export type Constraint = { readonly type: 'maxStatements'; readonly value: number };
+export type Constraint =
+  | { readonly type: 'maxStatements'; readonly value: number }
+  /** Запрет входить в названную зону. Зона берётся из `world.zones`. */
+  | { readonly type: 'keepOut'; readonly zone: string };
 
 /** Подсказка, которая выдаётся после нескольких неудачных попыток. */
 export interface Hint {
@@ -104,14 +107,26 @@ export function parseTask(input: unknown): Task {
     parseHint(item, `task.hints[${index}]`),
   );
 
-  // Ручное задание решается руками: инструкций нет, и ограничивать в нём нечего.
-  // Молча пропустить такое ограничение значит показать ученику требование,
-  // которое никогда не проверяется.
-  if (mode === 'jog' && constraints.length > 0) {
-    throw new TaskParseError(
-      'task.constraints',
-      'в ручном задании нет программы: ограничивать нечего',
-    );
+  for (const constraint of constraints) {
+    // Ручное задание решается руками: инструкций нет, и ограничивать в нём
+    // нечего. Молча пропустить такое ограничение значит показать ученику
+    // требование, которое никогда не проверяется.
+    if (mode === 'jog' && about(constraint) === 'program') {
+      throw new TaskParseError(
+        'task.constraints',
+        'в ручном задании нет программы: ограничивать нечего',
+      );
+    }
+
+    // Обратная беда: журнал прогона хранит концы движений, а не путь между
+    // ними, и робот, проехавший сквозь зону по прямой, выглядел бы в нём
+    // безупречно. Пока путь не проверяется, запрет пускать в программу нельзя.
+    if (mode === 'program' && about(constraint) === 'motion') {
+      throw new TaskParseError(
+        'task.constraints',
+        'запрет проверяется только в ручном задании: путь программы между точками не хранится',
+      );
+    }
   }
 
   // Подсказки открываются неудачными попытками, а попытка — это доработавшая
@@ -300,15 +315,29 @@ function parseConstraint(input: unknown, path: string): Constraint {
   const record = asRecord(input, path);
   const type = asNonEmptyString(record['type'], `${path}.type`);
 
-  if (type !== 'maxStatements') {
-    throw new TaskParseError(path, `неизвестное ограничение «${type}»`);
-  }
+  switch (type) {
+    case 'maxStatements': {
+      const value = asNumber(record['value'], `${path}.value`);
+      if (!Number.isInteger(value) || value < 1) {
+        throw new TaskParseError(
+          `${path}.value`,
+          `ожидалось целое число больше нуля, получено ${value}`,
+        );
+      }
+      return { type, value };
+    }
 
-  const value = asNumber(record['value'], `${path}.value`);
-  if (!Number.isInteger(value) || value < 1) {
-    throw new TaskParseError(`${path}.value`, `ожидалось целое число больше нуля, получено ${value}`);
+    case 'keepOut':
+      return { type, zone: asNonEmptyString(record['zone'], `${path}.zone`) };
+
+    default:
+      throw new TaskParseError(path, `неизвестное ограничение «${type}»`);
   }
-  return { type, value };
+}
+
+/** Про что ограничение: про текст программы или про движение робота. */
+function about(constraint: Constraint): 'program' | 'motion' {
+  return constraint.type === 'maxStatements' ? 'program' : 'motion';
 }
 
 function parseHint(input: unknown, path: string): Hint {

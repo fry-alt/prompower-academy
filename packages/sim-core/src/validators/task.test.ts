@@ -92,3 +92,30 @@ describe('цель «фланец в точке»', () => {
     ).toThrow(/task\.goals\[0\]\.tolerance/);
   });
 });
+
+describe('запрет входить в зону', () => {
+  const JOG = { ...MINIMAL, mode: 'jog' as const };
+
+  it('разбирается в ручном задании', () => {
+    const task = parseTask({ ...JOG, constraints: [{ type: 'keepOut', zone: 'зона оператора' }] });
+    expect(task.constraints).toEqual([{ type: 'keepOut', zone: 'зона оператора' }]);
+  });
+
+  it('зона названа обязательно', () => {
+    expect(() => parseTask({ ...JOG, constraints: [{ type: 'keepOut', zone: '' }] })).toThrow(
+      /task\.constraints\[0\]\.zone/,
+    );
+  });
+
+  it('в программном задании отвергается: путь между точками не хранится', () => {
+    expect(() =>
+      parseTask({ ...MINIMAL, constraints: [{ type: 'keepOut', zone: 'зона оператора' }] }),
+    ).toThrow(/только в ручном задании/);
+  });
+
+  it('ограничение на размер программы по-прежнему не пускают в ручное задание', () => {
+    expect(() => parseTask({ ...JOG, constraints: [{ type: 'maxStatements', value: 5 }] })).toThrow(
+      /ограничивать нечего/,
+    );
+  });
+});
