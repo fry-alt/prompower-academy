@@ -44,7 +44,7 @@
 - Create: `packages/sim-core/src/validators/task.test.ts`
 - Modify: `packages/sim-core/src/validators/task.ts`
 
-- [ ] **Step 1: Написать падающий тест**
+- [x] **Step 1: Написать падающий тест**
 
 Создать `packages/sim-core/src/validators/task.test.ts`:
 
@@ -85,12 +85,12 @@ describe('режим задания', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/task.test.ts`
 Expected: FAIL — `Property 'mode' does not exist on type 'Task'`.
 
-- [ ] **Step 3: Реализовать**
+- [x] **Step 3: Реализовать**
 
 В `packages/sim-core/src/validators/task.ts` добавить тип и поле:
 
@@ -149,17 +149,17 @@ function parseMode(input: unknown): TaskMode {
 }
 ```
 
-- [ ] **Step 4: Прогнать тесты**
+- [x] **Step 4: Прогнать тесты**
 
 Run: `npx vitest run packages/sim-core/src/validators/task.test.ts`
 Expected: PASS, 5 тестов.
 
-- [ ] **Step 5: Прогнать весь набор и typecheck**
+- [x] **Step 5: Прогнать весь набор и typecheck**
 
 Run: `npm test && npm run typecheck`
 Expected: всё зелёное — поле необязательное, старые задания не менялись.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add packages/sim-core/src/validators/task.ts packages/sim-core/src/validators/task.test.ts
@@ -174,7 +174,7 @@ git commit -m "feat: задание объявляет режим — прогр
 - Modify: `packages/sim-core/src/validators/task.ts`, `packages/sim-core/src/validators/check.ts`
 - Test: `packages/sim-core/src/validators/task.test.ts`, `packages/sim-core/src/validators/check.test.ts`
 
-- [ ] **Step 1: Написать падающие тесты разбора**
+- [x] **Step 1: Написать падающие тесты разбора**
 
 Добавить в конец `packages/sim-core/src/validators/task.test.ts`:
 
@@ -206,12 +206,12 @@ describe('цель «поза суставов»', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/task.test.ts`
 Expected: FAIL — «неизвестная цель «jointsAtPose»».
 
-- [ ] **Step 3: Реализовать разбор**
+- [x] **Step 3: Реализовать разбор**
 
 В `task.ts` добавить вариант в `Goal`:
 
@@ -270,12 +270,12 @@ function parseTolerance(input: unknown, path: string): number {
     }
 ```
 
-- [ ] **Step 4: Прогнать разбор**
+- [x] **Step 4: Прогнать разбор**
 
 Run: `npx vitest run packages/sim-core/src/validators/task.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Написать падающие тесты проверки**
+- [x] **Step 5: Написать падающие тесты проверки**
 
 Добавить в конец `packages/sim-core/src/validators/check.test.ts`:
 
@@ -316,12 +316,12 @@ describe('цель «поза суставов»', () => {
 });
 ```
 
-- [ ] **Step 6: Прогнать и убедиться, что падает**
+- [x] **Step 6: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/check.test.ts`
 Expected: FAIL — в `checkGoal` нет ветки `jointsAtPose` (TypeScript пожалуется на неполный `switch`).
 
-- [ ] **Step 7: Реализовать проверку**
+- [x] **Step 7: Реализовать проверку**
 
 В `check.ts` добавить импорт и ветку. Импорт:
 
@@ -383,12 +383,12 @@ function degrees(radians: number): string {
 }
 ```
 
-- [ ] **Step 8: Прогнать тесты**
+- [x] **Step 8: Прогнать тесты**
 
 Run: `npx vitest run packages/sim-core/src/validators/`
 Expected: PASS.
 
-- [ ] **Step 9: Коммит**
+- [x] **Step 9: Коммит**
 
 ```bash
 git add packages/sim-core/src/validators/
@@ -404,7 +404,7 @@ git commit -m "feat: цель урока — робот стоит в задан
 - Modify (вызовы): `components/simulator/use-program-run.ts`, `packages/sim-core/src/validators/check.test.ts`, `tests/sim/pick-and-place.test.ts`, `tests/sim/three-points.test.ts`, `tests/sim/conveyor.test.ts`
 - Test: `packages/sim-core/src/validators/task.test.ts`, `packages/sim-core/src/validators/check.test.ts`
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 Добавить в `packages/sim-core/src/validators/task.test.ts`:
 
@@ -488,12 +488,12 @@ import { fromTranslation, IDENTITY, type KinematicChain } from '../index';
 `toolOrigin`. При угле 0 фланец стоит в точке цели, при π/2 — в метре по Y,
 и расстояние между ними √2 м, откуда 1414 мм в ожидаемом тексте.
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/`
 Expected: FAIL — `checkTask` принимает 4 аргумента, цели `flangeAtPoint` нет.
 
-- [ ] **Step 3: Реализовать разбор цели**
+- [x] **Step 3: Реализовать разбор цели**
 
 В `task.ts` добавить вариант `Goal`:
 
@@ -525,7 +525,7 @@ Expected: FAIL — `checkTask` принимает 4 аргумента, цели
       };
 ```
 
-- [ ] **Step 4: Реализовать проверку и провести `chain` в подпись**
+- [x] **Step 4: Реализовать проверку и провести `chain` в подпись**
 
 В `check.ts`: импорт кинематики,
 
@@ -598,12 +598,12 @@ function checkFlangeAtPoint(
 }
 ```
 
-- [ ] **Step 5: Найти все места вызова**
+- [x] **Step 5: Найти все места вызова**
 
 Run: `npm run typecheck`
 Expected: FAIL со списком файлов, где `checkTask` зовут с четырьмя аргументами: `components/simulator/use-program-run.ts`, `packages/sim-core/src/validators/check.test.ts`, `tests/sim/pick-and-place.test.ts`, `tests/sim/three-points.test.ts`, `tests/sim/conveyor.test.ts`.
 
-- [ ] **Step 6: Починить вызовы**
+- [x] **Step 6: Починить вызовы**
 
 В `components/simulator/use-program-run.ts` — цепь уже есть аргументом хука:
 
@@ -618,12 +618,12 @@ Expected: FAIL со списком файлов, где `checkTask` зовут �
 
 В `packages/sim-core/src/validators/check.test.ts` цепь не нужна ни одной из старых целей: добавить в импорт `EMPTY_CHAIN` из `../index` и дописать его пятым аргументом во все существующие вызовы.
 
-- [ ] **Step 7: Прогнать всё**
+- [x] **Step 7: Прогнать всё**
 
 Run: `npm run typecheck && npm test`
 Expected: PASS, тестов стало больше на новые.
 
-- [ ] **Step 8: Коммит**
+- [x] **Step 8: Коммит**
 
 ```bash
 git add packages/sim-core components/simulator/use-program-run.ts tests/sim
@@ -638,7 +638,7 @@ git commit -m "feat: цель урока — инструмент в задан�
 - Modify: `packages/sim-core/src/validators/check.ts`, `packages/sim-core/src/index.ts`
 - Test: `packages/sim-core/src/validators/check.test.ts`
 
-- [ ] **Step 1: Написать падающий тест**
+- [x] **Step 1: Написать падающий тест**
 
 Добавить в `packages/sim-core/src/validators/check.test.ts`:
 
@@ -662,12 +662,12 @@ describe('checkGoals', () => {
 
 Дописать `checkGoals` в импорт из `./check`.
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run packages/sim-core/src/validators/check.test.ts`
 Expected: FAIL — `checkGoals` не экспортируется.
 
-- [ ] **Step 3: Реализовать**
+- [x] **Step 3: Реализовать**
 
 В `check.ts`:
 
@@ -710,7 +710,7 @@ export function checkTask(
 }
 ```
 
-- [ ] **Step 4: Открыть наружу**
+- [x] **Step 4: Открыть наружу**
 
 В `packages/sim-core/src/index.ts` заменить строку экспорта валидаторов на:
 
@@ -720,12 +720,12 @@ export { checkGoals, checkTask, earnedHints, type CheckResult, type GoalStatus }
 
 и дописать `type TaskMode` в экспорт из `./validators/task`.
 
-- [ ] **Step 5: Прогнать всё**
+- [x] **Step 5: Прогнать всё**
 
 Run: `npm test && npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add packages/sim-core
@@ -739,7 +739,7 @@ git commit -m "feat: автопроверка отдаёт статус кажд
 **Files:**
 - Create: `components/simulator/goal-ratchet.ts`, `components/simulator/goal-ratchet.test.ts`
 
-- [ ] **Step 1: Написать падающий тест**
+- [x] **Step 1: Написать падающий тест**
 
 Создать `components/simulator/goal-ratchet.test.ts`:
 
@@ -770,12 +770,12 @@ describe('takeGoals', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run components/simulator/goal-ratchet.test.ts`
 Expected: FAIL — файла `goal-ratchet.ts` нет.
 
-- [ ] **Step 3: Реализовать**
+- [x] **Step 3: Реализовать**
 
 Создать `components/simulator/goal-ratchet.ts`:
 
@@ -810,12 +810,12 @@ export function takeGoals(taken: readonly boolean[], reached: readonly boolean[]
 }
 ```
 
-- [ ] **Step 4: Прогнать тесты**
+- [x] **Step 4: Прогнать тесты**
 
 Run: `npx vitest run components/simulator/goal-ratchet.test.ts`
 Expected: PASS, 5 тестов.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add components/simulator/goal-ratchet.ts components/simulator/goal-ratchet.test.ts
@@ -836,7 +836,7 @@ git commit -m "feat: взятая цель урока не отдаётся на
 ставят фланец в точку X 432, Y 96, Z 398 мм, и цель 2 стоит в трёх миллиметрах
 оттуда.
 
-- [ ] **Step 1: Написать падающий тест содержания**
+- [x] **Step 1: Написать падающий тест содержания**
 
 Создать `tests/sim/lesson-one.test.ts`:
 
@@ -910,12 +910,12 @@ describe('задание «знакомство с коботом»', () => {
 });
 ```
 
-- [ ] **Step 2: Прогнать и убедиться, что падает**
+- [x] **Step 2: Прогнать и убедиться, что падает**
 
 Run: `npx vitest run tests/sim/lesson-one.test.ts`
 Expected: FAIL — `ENOENT`, файла задания нет.
 
-- [ ] **Step 3: Написать задание**
+- [x] **Step 3: Написать задание**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/01-znakomstvo-s-kobotom/task.json`:
 
@@ -947,12 +947,12 @@ Expected: FAIL — `ENOENT`, файла задания нет.
 Обратная связь здесь непрерывная: цель отмечается в тот момент, когда ученик до
 неё довёл.
 
-- [ ] **Step 4: Прогнать тест содержания**
+- [x] **Step 4: Прогнать тест содержания**
 
 Run: `npx vitest run tests/sim/lesson-one.test.ts`
 Expected: PASS, 6 тестов.
 
-- [ ] **Step 5: Написать теорию**
+- [x] **Step 5: Написать теорию**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/01-znakomstvo-s-kobotom/lesson.ru.mdx`:
 
@@ -1009,12 +1009,12 @@ minutes: 3
 подведите фланец — и посмотрите, сколькими способами до неё можно дотянуться.
 ```
 
-- [ ] **Step 6: Проверить, что урок читается сборкой**
+- [x] **Step 6: Проверить, что урок читается сборкой**
 
 Run: `npm run build`
 Expected: сборка проходит, среди статических страниц есть `/ru/lesson/znakomstvo-s-kobotom`. Если сборка падает на `starter.json` — это ожидаемо, чинится следующей задачей.
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add content/courses/osnovy-raboty-s-kobotom/lessons/01-znakomstvo-s-kobotom tests/sim/lesson-one.test.ts
@@ -1028,7 +1028,7 @@ git commit -m "feat: урок 1 — теория о коботе и задани
 **Files:**
 - Modify: `lib/content.ts`
 
-- [ ] **Step 1: Убедиться, что сейчас ломается**
+- [x] **Step 1: Убедиться, что сейчас ломается**
 
 Run: `npm run build`
 Expected: FAIL — `ENOENT: no such file or directory ... 01-znakomstvo-s-kobotom/starter.json`.
@@ -1037,7 +1037,7 @@ Unit-теста здесь нет намеренно: `loadLesson` читает 
 сервером Next — это интеграция, и проверяется она сборкой и сквозным тестом, а
 не подделкой файловой системы.
 
-- [ ] **Step 2: Реализовать**
+- [x] **Step 2: Реализовать**
 
 В `lib/content.ts` заменить чтение `starter.json` в `loadLesson`:
 
@@ -1064,12 +1064,12 @@ async function loadStarter(root: string): Promise<object> {
 }
 ```
 
-- [ ] **Step 3: Проверить сборкой**
+- [x] **Step 3: Проверить сборкой**
 
 Run: `npm run build`
 Expected: PASS, страница урока 1 попадает в статические.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add lib/content.ts
@@ -1083,7 +1083,7 @@ git commit -m "feat: урок без стартовой программы от�
 **Files:**
 - Modify: `messages/ru.json`, `messages/en.json`
 
-- [ ] **Step 1: Дописать русские строки**
+- [x] **Step 1: Дописать русские строки**
 
 В `messages/ru.json` в раздел `lesson.goal` добавить две строки:
 
@@ -1109,7 +1109,7 @@ git commit -m "feat: урок без стартовой программы от�
       "text": "Задание выполняется в трёхмерной сцене: робот, пульт и проверка не помещаются на экран телефона. Теорию урока можно читать здесь, а задание откройте по этому адресу с компьютера."
 ```
 
-- [ ] **Step 2: Дописать английские строки**
+- [x] **Step 2: Дописать английские строки**
 
 В `messages/en.json` в те же места:
 
@@ -1132,12 +1132,12 @@ git commit -m "feat: урок без стартовой программы от�
       "text": "The task runs in a 3D scene: the robot, the controls and the checks do not fit a phone screen. Read the theory here and open the task at this address on a computer."
 ```
 
-- [ ] **Step 3: Проверить, что файлы остались валидным JSON**
+- [x] **Step 3: Проверить, что файлы остались валидным JSON**
 
 Run: `node -e "require('./messages/ru.json'); require('./messages/en.json'); console.log('ok')"`
 Expected: `ok`
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add messages
@@ -1152,7 +1152,7 @@ git commit -m "feat: строки ручного урока"
 - Create: `components/simulator/scene-frame.ts`, `components/simulator/target-point.tsx`
 - Modify: `components/simulator/scene-objects.tsx`
 
-- [ ] **Step 1: Вынести пересчёт координат**
+- [x] **Step 1: Вынести пересчёт координат**
 
 Создать `components/simulator/scene-frame.ts`:
 
@@ -1184,12 +1184,12 @@ export function sizeToScene(size: Vec3): [number, number, number] {
 import { sizeToScene, toScene } from './scene-frame';
 ```
 
-- [ ] **Step 2: Проверить, что ничего не переехало**
+- [x] **Step 2: Проверить, что ничего не переехало**
 
 Run: `npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 3: Написать метку**
+- [x] **Step 3: Написать метку**
 
 Создать `components/simulator/target-point.tsx`:
 
@@ -1223,12 +1223,12 @@ export function TargetPoint({ point, radius }: { point: Vec3; radius: number }) 
 }
 ```
 
-- [ ] **Step 4: Проверить сборку**
+- [x] **Step 4: Проверить сборку**
 
 Run: `npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add components/simulator/scene-frame.ts components/simulator/target-point.tsx components/simulator/scene-objects.tsx
@@ -1242,7 +1242,7 @@ git commit -m "feat: метка целевой точки в сцене"
 **Files:**
 - Create: `components/simulator/use-jog-task.ts`
 
-- [ ] **Step 1: Написать хук**
+- [x] **Step 1: Написать хук**
 
 Создать `components/simulator/use-jog-task.ts`:
 
@@ -1337,12 +1337,12 @@ export function useJogTask(
 }
 ```
 
-- [ ] **Step 2: Проверить типы**
+- [x] **Step 2: Проверить типы**
 
 Run: `npm run typecheck`
 Expected: PASS.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add components/simulator/use-jog-task.ts
@@ -1357,7 +1357,7 @@ git commit -m "feat: состояние ручного задания"
 - Create: `components/lesson/task-brief.tsx`, `components/simulator/jog-lesson.tsx`
 - Modify: `components/simulator/lesson-workspace.tsx`
 
-- [ ] **Step 1: Вынести условие задания в свой файл**
+- [x] **Step 1: Вынести условие задания в свой файл**
 
 Создать `components/lesson/task-brief.tsx` и перенести в него из
 `lesson-workspace.tsx` функции `TaskBrief`, `goalText`, `Hints` и `Verdict`
@@ -1497,12 +1497,12 @@ function Verdict({
                   />
 ```
 
-- [ ] **Step 2: Проверить, что программные уроки не изменились**
+- [x] **Step 2: Проверить, что программные уроки не изменились**
 
 Run: `npm run typecheck && npm test`
 Expected: PASS.
 
-- [ ] **Step 3: Написать экран ручного урока**
+- [x] **Step 3: Написать экран ручного урока**
 
 Создать `components/simulator/jog-lesson.tsx`:
 
@@ -1715,7 +1715,7 @@ centerY }` из `components/simulator/fit-robot.ts`. Пересчёт кадра
 (`includeScene`) здесь не нужен: ни деталей, ни зон в задании нет, а целевая
 точка лежит в пределах руки и в габариты робота уже входит.
 
-- [ ] **Step 4: Развести режимы**
+- [x] **Step 4: Развести режимы**
 
 В `components/simulator/lesson-workspace.tsx`, в `WideLesson`, после проверок
 загрузки модели и цепи — выбор экрана по режиму задания:
@@ -1747,7 +1747,7 @@ centerY }` из `components/simulator/fit-robot.ts`. Пересчёт кадра
 import { JogLesson } from './jog-lesson';
 ```
 
-- [ ] **Step 5: Посмотреть глазами**
+- [x] **Step 5: Посмотреть глазами**
 
 Run: `npm run dev`, открыть `http://localhost:3000/ru/lesson/znakomstvo-s-kobotom`
 
@@ -1762,7 +1762,7 @@ Run: `npm run dev`, открыть `http://localhost:3000/ru/lesson/znakomstvo-s
   «Задание выполнено»;
 - «Сброс» возвращает робота в домашнюю позу, отметки остаются.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add components
@@ -1776,7 +1776,7 @@ git commit -m "feat: экран урока с ползунками вместо 
 **Files:**
 - Create: `content/courses/osnovy-raboty-s-kobotom/lessons/01-znakomstvo-s-kobotom/tour.ru.json`
 
-- [ ] **Step 1: Написать сценарий**
+- [x] **Step 1: Написать сценарий**
 
 Создать `content/courses/osnovy-raboty-s-kobotom/lessons/01-znakomstvo-s-kobotom/tour.ru.json`:
 
@@ -1800,13 +1800,13 @@ git commit -m "feat: экран урока с ползунками вместо 
 Шагов два, а не шесть, как в уроке 3: там подсветка вела по палитре блоков, где
 без указания не разобраться, а здесь всё управление — ползунки, и они на виду.
 
-- [ ] **Step 2: Проверить глазами**
+- [x] **Step 2: Проверить глазами**
 
 Run: `npm run dev`, открыть `http://localhost:3000/ru/lesson/znakomstvo-s-kobotom`
 Expected: подсветка на кнопке «К заданию»; после нажатия — на панели суставов;
 после выполнения задания сценарий закрывается.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add content/courses/osnovy-raboty-s-kobotom/lessons/01-znakomstvo-s-kobotom/tour.ru.json
@@ -1820,7 +1820,7 @@ git commit -m "feat: обучение урока 1 указывает на по�
 **Files:**
 - Create: `tests/e2e/lesson-one.spec.ts`
 
-- [ ] **Step 1: Написать тест**
+- [x] **Step 1: Написать тест**
 
 Создать `tests/e2e/lesson-one.spec.ts`:
 
@@ -1894,12 +1894,12 @@ test('сброс возвращает позу, но не отбирает вз�
 });
 ```
 
-- [ ] **Step 2: Прогнать**
+- [x] **Step 2: Прогнать**
 
 Run: `npx playwright test tests/e2e/lesson-one.spec.ts`
 Expected: PASS, 5 тестов. Первый прогон собирает приложение — это несколько минут.
 
-- [ ] **Step 3: Коммит**
+- [x] **Step 3: Коммит**
 
 ```bash
 git add tests/e2e/lesson-one.spec.ts
@@ -1914,7 +1914,7 @@ git commit -m "test: урок 1 проходится ползунками"
 - Modify: `README.md`
 - Test: `tests/e2e/course.spec.ts` (только прогон, правок не требует)
 
-- [ ] **Step 1: Проверить, что карта курса не сломалась**
+- [x] **Step 1: Проверить, что карта курса не сломалась**
 
 Run: `npx playwright test tests/e2e/course.spec.ts`
 Expected: PASS без единой правки в тесте. Ни одна проверка там не считает уроки
@@ -1922,7 +1922,7 @@ Expected: PASS без единой правки в тесте. Ни одна п�
 идут от урока 4 к уроку 5, а «последний урок» — это по-прежнему «Входы и
 выходы».
 
-- [ ] **Step 2: Обновить README**
+- [x] **Step 2: Обновить README**
 
 В разделе «Что уже работает» дописать абзац после описания песочницы:
 
@@ -1934,20 +1934,20 @@ Expected: PASS без единой правки в тесте. Ни одна п�
 ученик до них довёл.
 ```
 
-- [ ] **Step 3: Полная проверка**
+- [x] **Step 3: Полная проверка**
 
 Run: `npm run typecheck && npm test && npm run build && npm run test:e2e`
 Expected: typecheck чистый; Vitest зелёный; сборка проходит; Playwright зелёный
 целиком, включая уроки 3, 4 и 5 — их задания не менялись.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add README.md
 git commit -m "docs: курс начинается с урока о коботе"
 ```
 
-- [ ] **Step 5: Отметить выполненные шаги плана и закрыть ветку**
+- [x] **Step 5: Отметить выполненные шаги плана и закрыть ветку**
 
 Проставить галочки в этом файле, закоммитить, затем перейти к скиллу
 `superpowers:finishing-a-development-branch`.
