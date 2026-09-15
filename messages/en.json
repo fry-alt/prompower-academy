@@ -99,7 +99,7 @@
     "downloadPython": "Download .py",
     "desktopOnly": {
       "title": "The task opens on a computer or tablet",
-      "text": "The program is built from blocks and tested on a robot in 3D — that does not fit a phone screen. Read the theory here and open this address on a computer for the task.",
+      "text": "The task runs in a 3D scene: the robot, the controls and the checks do not fit a phone screen. Read the theory here and open this address on a computer for the task.",
       "back": "Back to theory"
     },
     "tour": {
@@ -115,8 +115,16 @@
     "failed": "Task not complete:",
     "goal": {
       "objectInZone": "Move “{object}” into “{zone}”",
-      "gripperState": "Leave the gripper {state}",
-      "pointsVisited": "Visit every marked point ({count})"
+      "gripperState": "Leave the gripper {state}"
+,
+      "pointsVisited": "Visit every marked point ({count})",
+      "jointsAtPose": "Match the shown pose",
+      "flangeAtPoint": "Bring the tool to the marker"
+    },
+    "goalDone": "Goal reached",
+    "jog": {
+      "title": "Joints",
+      "hint": "Drag the sliders — the robot follows. A goal is marked as soon as you reach it."
     },
     "gripper": {
       "open": "open",
