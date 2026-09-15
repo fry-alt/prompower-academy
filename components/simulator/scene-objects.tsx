@@ -2,25 +2,15 @@
 
 import { useMemo } from 'react';
 import { DoubleSide, EdgesGeometry, PlaneGeometry } from 'three';
-import type { Conveyor, SceneObject, Sensor, Vec3, Zone } from '@prompower/sim-core';
+import type { Conveyor, SceneObject, Sensor, Zone } from '@prompower/sim-core';
+import { sizeToScene, toScene } from './scene-frame';
 
 /**
  * Детали, зоны, ленты и датчики на столе.
  *
- * Состояние мира живёт в системе координат URDF, где вверх — ось Z, а three.js
- * работает с осью Y вверх. Пересчёт собран в одном месте ниже: если растащить
- * его по компонентам, рано или поздно деталь уедет не туда, и искать будет
- * негде.
+ * Пересчёт координат мира в координаты сцены живёт в `scene-frame.ts` — он
+ * нужен не только здесь.
  */
-
-/** URDF (x, y, z) → three (x, z, −y). Тот же разворот, что у корня робота. */
-function toScene(point: Vec3): [number, number, number] {
-  return [point.x, point.z, -point.y];
-}
-
-function sizeToScene(size: Vec3): [number, number, number] {
-  return [size.x, size.z, size.y];
-}
 
 export function SceneObjects({
   objects,
