@@ -34,8 +34,11 @@ export function GuidedTour({
   onClose,
 }: {
   tour: Tour;
-  /** Нужна шагам, которые ждут появления блока в программе. */
-  program: Program;
+  /**
+   * Программа урока: нужна шагам, которые ждут появления блока. У заданий,
+   * которые решают руками, её нет — и таких шагов в их сценариях не бывает.
+   */
+  program?: Program | undefined;
   passed: boolean;
   onClose: () => void;
 }) {
@@ -100,7 +103,7 @@ export function GuidedTour({
 
     const done =
       step.done.kind === 'programHas'
-        ? countOp(program, step.done.op) >= step.done.count
+        ? program !== undefined && countOp(program, step.done.op) >= step.done.count
         : step.done.kind === 'passed' && passed;
 
     if (done) setIndex((current) => current + 1);

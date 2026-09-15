@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
-import { parseTask } from '@prompower/sim-core';
 import { LessonTheory } from '@/components/lesson/lesson-theory';
 import { allLessonSlugs, loadLesson } from '@/lib/content';
 import { LessonClient } from './lesson-client';
@@ -41,11 +40,11 @@ export default async function LessonPage({
   const lesson = await loadLesson(id, locale);
   if (lesson === null) notFound();
 
-  // Задание разбираем на сервере: битый файл курса должен ломать сборку, а не
+  // Задание разобрано загрузчиком: битый файл курса ломает сборку, а не
   // урок у ученика. Холст уходит на клиент как есть — его разбирает Blockly.
   return (
     <LessonClient
-      task={parseTask(lesson.task)}
+      task={lesson.task}
       tour={lesson.tour}
       starter={lesson.starter}
       title={lesson.meta.title}

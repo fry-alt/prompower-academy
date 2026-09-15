@@ -1,21 +1,19 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { URDFRobot } from 'urdf-loader';
 import { jointLimits, type KinematicChain, type RobotPlugin, type Task } from '@prompower/sim-core';
-import { GuidedTour } from '@/components/lesson/guided-tour';
-import { LessonHeader } from '@/components/lesson/lesson-header';
-import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
+import { LessonBrief, LessonShell } from '@/components/lesson/lesson-shell';
+import type { LessonLink } from '@/components/lesson/lesson-nav';
 import { TaskBrief } from '@/components/lesson/task-brief';
-import { TheoryView } from '@/components/lesson/theory-view';
 import type { Tour } from '@/lib/tour';
-import { includeScene, type RobotBounds } from './fit-robot';
+import type { RobotBounds } from './fit-robot';
 import { GhostRobot } from './ghost-robot';
 import { JointPanel } from './joint-panel';
 import { RobotViewer } from './robot-viewer';
-import { SplitPane } from './split-pane';
 import { TargetPoint } from './target-point';
+import { taskBounds } from './task-bounds';
 import { useJogTask } from './use-jog-task';
 
 /**
@@ -23,11 +21,8 @@ import { useJogTask } from './use-jog-task';
  *
  * Отдельный компонент, а не ветка внутри урока с блоками: хук прогона и хук
  * ручного задания нельзя звать условно, а вызывать оба ради одного значит
- * поднимать интерпретатор там, где исполнять нечего.
- *
- * Сборка экрана повторяет программный урок — шапка, этап теории, две зоны.
- * Повторяются сборки, а не логика: и шапка, и теория, и разделитель давно
- * вынесены в свои компоненты.
+ * поднимать интерпретатор там, где исполнять нечего. Всё, что у двух уроков
+ * общего, — в `LessonShell`; здесь остаётся то, чем они отличаются.
  */
 export function JogLesson({
   plugin,
@@ -40,6 +35,7 @@ export function JogLesson({
   robot,
   chain,
   bounds,
+  loadMs,
   onFps,
   fps,
 }: {
@@ -53,15 +49,11 @@ export function JogLesson({
   robot: URDFRobot;
   chain: KinematicChain;
   bounds: RobotBounds;
+  loadMs: number;
   onFps: (value: number) => void;
   fps: number;
 }) {
   const t = useTranslations('lesson');
-  const tKey = useTranslations();
-  const tCourse = useTranslations('course');
-
-  const [reading, setReading] = useState(true);
-  const [touring, setTouring] = useState(tour !== null);
 
   const jog = useJogTask(chain, task, plugin.homePose);
   const limits = useMemo(() => jointLimits(chain), [chain]);
@@ -69,149 +61,83 @@ export function JogLesson({
 
   // Подсказка активной цели в сцене: поза показывается серой копией, точка —
   // меткой. Взятая цель со сцены уходит: показывать в ней больше нечего.
-  const active = jog.active === null ? null : (jog.statuses[jog.active]?.goal ?? null);
+  const active = jog.activeStatus?.goal ?? null;
 
-  // Целевые точки входят в кадр наравне с деталями программного урока. По
-  // одному роботу кадр строить нельзя: метка у края зоны обрезается, стоит
-  // ученику сузить сцену разделителем.
-  const framed = useMemo(
-    () =>
-      includeScene(
-        bounds,
-        task.goals
-          .filter((goal) => goal.type === 'flangeAtPoint')
-          .map((goal) => ({
-            position: goal.point,
-            size: { x: goal.tolerance * 2, y: goal.tolerance * 2, z: goal.tolerance * 2 },
-          })),
-      ),
-    [bounds, task],
-  );
+  const framed = useMemo(() => taskBounds(bounds, task), [bounds, task]);
 
   return (
-    <div className="flex h-dvh flex-col bg-surface-0 text-ink">
-      <LessonHeader title={title} model={tKey(plugin.displayNameKey)}>
-        {tour !== null && !touring && (
-          <button
-            type="button"
-            data-testid="tour-restart"
-            onClick={() => setTouring(true)}
-            className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
-          >
-            {t('tour.restart')}
-          </button>
-        )}
-
-        {!reading && (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              data-testid="back-to-theory"
-              onClick={() => setReading(true)}
-              className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
-            >
-              {tCourse('backToTheory')}
-            </button>
-
-            <button
-              type="button"
-              data-testid="reset"
-              onClick={jog.reset}
-              className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
-            >
-              {t('controls.reset')}
-            </button>
-          </div>
-        )}
-      </LessonHeader>
-
-      {plugin.placeholderNoticeKey !== null && (
-        <p role="status" className="border-b border-line bg-surface-1 px-5 py-2 text-sm text-warn">
-          {tKey(plugin.placeholderNoticeKey)}
-        </p>
-      )}
-
-      {reading ? (
+    <LessonShell
+      plugin={plugin}
+      title={title}
+      theory={theory}
+      previous={previous}
+      next={next}
+      tour={tour}
+      passed={jog.passed}
+      loadMs={loadMs}
+      fps={fps}
+      controls={
+        <button
+          type="button"
+          data-testid="reset"
+          onClick={jog.reset}
+          className="rounded-panel border border-line bg-surface-1 px-3 py-1.5 text-sm text-ink-dim transition-colors hover:text-ink"
+        >
+          {t('controls.reset')}
+        </button>
+      }
+      left={
         <>
-          <TheoryView onStart={() => setReading(false)}>{theory}</TheoryView>
-          <div className="border-t border-line px-5 py-3">
-            <LessonNav previous={previous} next={next} />
+          <LessonBrief>
+            <TaskBrief
+              task={task}
+              check={jog.passed ? PASSED : null}
+              error={null}
+              taken={jog.taken}
+              activeFailure={jog.activeStatus?.failure ?? null}
+              failedAttempts={0}
+            />
+          </LessonBrief>
+
+          <div data-testid="joint-panel" className="min-h-0 flex-1 overflow-y-auto p-5">
+            <h2 className="mb-1 text-sm font-medium">{t('jog.title')}</h2>
+            <p className="mb-4 text-sm text-ink-faint">{t('jog.hint')}</p>
+
+            <JointPanel
+              joints={plugin.joints}
+              limits={limits}
+              values={jog.joints}
+              onChange={jog.setJoint}
+            />
           </div>
         </>
-      ) : (
-        <SplitPane
-          label={tCourse('splitLabel')}
-          initial={0.42}
-          left={
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="max-h-[45%] shrink-0 overflow-y-auto border-b border-line p-5">
-                <TaskBrief
-                  task={task}
-                  check={jog.passed ? { passed: true, failures: [] } : null}
-                  error={null}
-                  taken={jog.taken}
-                  activeFailure={jog.active === null ? null : (jog.statuses[jog.active]?.failure ?? null)}
-                  failedAttempts={0}
-                />
-              </div>
+      }
+      viewer={
+        <RobotViewer
+          robot={robot}
+          jointNames={jointNames}
+          values={jog.joints}
+          scene={plugin.scene}
+          bounds={framed}
+          onFpsSample={onFps}
+        >
+          {active?.type === 'jointsAtPose' && (
+            <GhostRobot source={robot} jointNames={jointNames} values={active.joints} />
+          )}
 
-              <div data-testid="joint-panel" className="min-h-0 flex-1 overflow-y-auto p-5">
-                <h2 className="mb-1 text-sm font-medium">{t('jog.title')}</h2>
-                <p className="mb-4 text-sm text-ink-faint">{t('jog.hint')}</p>
-
-                <JointPanel
-                  joints={plugin.joints}
-                  limits={limits}
-                  values={jog.joints}
-                  onChange={jog.setJoint}
-                />
-              </div>
-            </div>
-          }
-          right={
-            <main className="relative min-h-0 flex-1">
-              <RobotViewer
-                robot={robot}
-                jointNames={jointNames}
-                values={jog.joints}
-                scene={plugin.scene}
-                bounds={framed}
-                onFpsSample={onFps}
-              >
-                {active?.type === 'jointsAtPose' && (
-                  <GhostRobot source={robot} jointNames={jointNames} values={active.joints} />
-                )}
-
-                {active?.type === 'flangeAtPoint' && (
-                  <TargetPoint point={active.point} radius={active.tolerance} />
-                )}
-              </RobotViewer>
-
-              {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
-              />
-
-              <p
-                data-testid="scene-stats"
-                className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"
-              >
-                {fps} fps
-              </p>
-            </main>
-          }
-        />
-      )}
-
-      {tour !== null && touring && (
-        <GuidedTour
-          tour={tour}
-          program={{ version: 1, body: [] }}
-          passed={jog.passed}
-          onClose={() => setTouring(false)}
-        />
-      )}
-    </div>
+          {active?.type === 'flangeAtPoint' && (
+            <TargetPoint point={active.point} radius={active.tolerance} />
+          )}
+        </RobotViewer>
+      }
+    />
   );
 }
+
+/**
+ * Итог ручного задания: взяты все цели.
+ *
+ * Провалов в нём не бывает — невыполненная цель объясняет себя сама, строкой
+ * под списком, и до общего вердикта дело не доходит.
+ */
+const PASSED = { passed: true, failures: [] } as const;

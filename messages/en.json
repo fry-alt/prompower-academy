@@ -115,8 +115,7 @@
     "failed": "Task not complete:",
     "goal": {
       "objectInZone": "Move “{object}” into “{zone}”",
-      "gripperState": "Leave the gripper {state}"
-,
+      "gripperState": "Leave the gripper {state}",
       "pointsVisited": "Visit every marked point ({count})",
       "jointsAtPose": "Match the shown pose",
       "flangeAtPoint": "Bring the tool to the marker"

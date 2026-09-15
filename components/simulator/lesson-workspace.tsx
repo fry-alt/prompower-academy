@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { LessonHeader } from '@/components/lesson/lesson-header';
 import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
+import { LessonBrief, LessonShell } from '@/components/lesson/lesson-shell';
 import { TaskBrief } from '@/components/lesson/task-brief';
 import { TaskOnDesktop } from '@/components/lesson/task-on-desktop';
 import { TheoryView } from '@/components/lesson/theory-view';
@@ -44,7 +45,7 @@ import { SceneObjects } from './scene-objects';
 import { useProgramRun } from './use-program-run';
 import { useUrdfRobot } from './use-urdf-robot';
 import { useUrdfChain } from './use-urdf-chain';
-import { includeScene } from './fit-robot';
+import { taskBounds } from './task-bounds';
 
 /**
  * Экран задания: условие, программа и сцена.
@@ -140,6 +141,7 @@ function WideLesson({ plugin, task, tour, starter, title, theory, previous, next
         robot={model.robot}
         chain={chain.chain}
         bounds={model.bounds}
+        loadMs={model.loadMs}
         fps={fps}
         onFps={setFps}
       />
@@ -319,174 +321,112 @@ function Workspace({
     );
   }, [runner.run]);
 
-  // Кадр строится по роботу вместе с деталями и зонами: иначе задание окажется
-  // за краем экрана, а ученику надо видеть, куда он перекладывает деталь.
-  const bounds = useMemo(
-    () => includeScene(model.bounds, [...task.world.objects, ...task.world.zones]),
-    [model.bounds, task],
-  );
+  // Кадр строится по роботу вместе с деталями, зонами и метками целей: иначе
+  // задание окажется за краем экрана, а ученику надо видеть, куда он
+  // перекладывает деталь.
+  const bounds = useMemo(() => taskBounds(model.bounds, task), [model.bounds, task]);
 
   return (
-    <div className="flex h-dvh flex-col bg-surface-0 text-ink">
-      <LessonHeader title={title} model={tKey(plugin.displayNameKey)}>
-        {tour !== null && !touring && (
-          <button
-            type="button"
-            data-testid="tour-restart"
-            onClick={() => setTouring(true)}
-            className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
-          >
-            {t('tour.restart')}
-          </button>
-        )}
+    <LessonShell
+      plugin={plugin}
+      title={title}
+      theory={theory}
+      previous={previous}
+      next={next}
+      tour={tour}
+      passed={runner.check?.passed === true && runner.status === 'done'}
+      program={program}
+      loadMs={model.loadMs}
+      fps={fps}
+      controls={
+        <RunControls
+          locked={teaching !== null}
+          status={runner.status}
+          speed={runner.speed}
+          onPlay={runner.play}
+          onPause={runner.pause}
+          onStep={runner.stepOnce}
+          onReset={runner.reset}
+          onSpeed={runner.setSpeed}
+        />
+      }
+      left={
+        <>
+          <LessonBrief>
+            {teaching === null ? (
+              <TaskBrief
+                task={task}
+                check={runner.status === 'done' ? runner.check : null}
+                error={runner.run.error}
+                taken={[]}
+                failedAttempts={runner.failedAttempts}
+              />
+            ) : (
+              <TeachPanel
+                joints={plugin.joints}
+                chain={chain}
+                values={teaching.joints}
+                note={teaching.note}
+                onChange={moveTeaching}
+                onJog={jogTeaching}
+                onPose={poseTeaching}
+                onAlignDown={alignTeaching}
+                onSave={saveTeaching}
+                onCancel={() => setTeaching(null)}
+              />
+            )}
+          </LessonBrief>
 
-        {!reading && (
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              data-testid="back-to-theory"
-              onClick={() => setReading(true)}
-              className="rounded-panel border border-line px-3 py-1.5 text-sm text-ink-dim hover:text-ink"
-            >
-              {tCourse('backToTheory')}
-            </button>
-
-            <RunControls
-              locked={teaching !== null}
-              status={runner.status}
-              speed={runner.speed}
-              onPlay={runner.play}
-              onPause={runner.pause}
-              onStep={runner.stepOnce}
-              onReset={runner.reset}
-              onSpeed={runner.setSpeed}
+          {/*
+            Редактор остаётся смонтированным и во время показа точки.
+            Размонтировать его нельзя: показанная поза возвращается в блок
+            замыканием на объект Blockly, а вместе с редактором умирает и
+            рабочая область — запись уходит в никуда, и поза теряется молча.
+          */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ProgramPanel
+              program={program}
+              starter={starter}
+              current={runner.run.current}
+              error={programError}
+              fileName={`${task.id}.py`}
+              onProgram={onProgram}
+              onTeach={startTeaching}
             />
           </div>
-        )}
-      </LessonHeader>
-
-      {plugin.placeholderNoticeKey !== null && (
-        <p role="status" className="border-b border-line bg-surface-1 px-5 py-2 text-sm text-warn">
-          {tKey(plugin.placeholderNoticeKey)}
-        </p>
-      )}
-
-      {reading ? (
-        <>
-          <TheoryView onStart={() => setReading(false)}>{theory}</TheoryView>
-          <div className="border-t border-line px-5 py-3">
-            <LessonNav previous={previous} next={next} />
-          </div>
         </>
-      ) : (
-        <SplitPane
-          label={tCourse('splitLabel')}
-          initial={0.52}
-          left={
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="max-h-[45%] shrink-0 overflow-y-auto border-b border-line p-5">
-                {teaching === null ? (
-                  <TaskBrief
-                    task={task}
-                    check={runner.status === 'done' ? runner.check : null}
-                    error={runner.run.error}
-                    taken={[]}
-                    failedAttempts={runner.failedAttempts}
-                  />
-                ) : (
-                  <TeachPanel
-                    joints={plugin.joints}
-                    chain={chain}
-                    values={teaching.joints}
-                    note={teaching.note}
-                    onChange={moveTeaching}
-                    onJog={jogTeaching}
-                    onPose={poseTeaching}
-                    onAlignDown={alignTeaching}
-                    onSave={saveTeaching}
-                    onCancel={() => setTeaching(null)}
-                  />
-                )}
-              </div>
+      }
+      viewer={
+        <RobotViewer
+          robot={model.robot}
+          jointNames={jointNames}
+          values={runner.joints}
+          scene={plugin.scene}
+          bounds={bounds}
+          onFpsSample={onFps}
+        >
+          <SceneObjects
+            objects={runner.objects}
+            zones={runner.run.world.zones}
+            conveyors={runner.run.world.conveyors}
+            sensors={runner.run.world.sensors}
+            sensorOn={sensorOn}
+            heldId={runner.run.world.grasped}
+          />
 
-              {/*
-                Редактор остаётся смонтированным и во время показа точки.
-                Размонтировать его нельзя: показанная поза возвращается в блок
-                замыканием на объект Blockly, а вместе с редактором умирает и
-                рабочая область — запись уходит в никуда, и поза теряется молча.
-              */}
-              <div className="flex min-h-0 flex-1 flex-col">
-                <ProgramPanel
-                  program={program}
-                  starter={starter}
-                  current={runner.run.current}
-                  error={programError}
-                  fileName={`${task.id}.py`}
-                  onProgram={onProgram}
-                  onTeach={startTeaching}
-                />
-              </div>
-            </div>
-          }
-          right={
-            <main className="relative min-h-0 flex-1">
-              <RobotViewer
-                robot={model.robot}
-                jointNames={jointNames}
-                values={runner.joints}
-                scene={plugin.scene}
-                bounds={bounds}
-                onFpsSample={onFps}
-              >
-                <SceneObjects
-                  objects={runner.objects}
-                  zones={runner.run.world.zones}
-                  conveyors={runner.run.world.conveyors}
-                  sensors={runner.run.world.sensors}
-                  sensorOn={sensorOn}
-                  heldId={runner.run.world.grasped}
-                />
-
-                {teaching !== null && shownJoints !== null && (
-                  <>
-                    <GhostRobot source={model.robot} jointNames={jointNames} values={shownJoints} />
-                    {/* Оси в долях габарита: у Zu 3 и Zu 20 разный масштаб, и стрелка
-                        в фиксированных сантиметрах у одного потеряется, у другого
-                        закроет сцену. */}
-                    <FlangeTriad chain={chain} values={shownJoints} size={bounds.radius * 0.25} />
-                    <BaseTriad size={bounds.radius * 0.25} />
-                  </>
-                )}
-              </RobotViewer>
-
-              {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. Делается
-                  наложением поверх холста, а не в сцене — шейдер ради неё писать
-                  незачем, а пакет постобработки мы не подключаем. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
-              />
-
-              <p
-                data-testid="scene-stats"
-                className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"
-              >
-                <span data-testid="load-ms">{model.loadMs}</span> ms · {fps} fps
-              </p>
-            </main>
-          }
-        />
-      )}
-
-      {tour !== null && touring && (
-        <GuidedTour
-          tour={tour}
-          program={program}
-          passed={runner.check?.passed === true && runner.status === 'done'}
-          onClose={closeTour}
-        />
-      )}
-    </div>
+          {teaching !== null && shownJoints !== null && (
+            <>
+              <GhostRobot source={model.robot} jointNames={jointNames} values={shownJoints} />
+              {/* Оси в долях габарита: у Zu 3 и Zu 20 разный масштаб, и стрелка
+                  в фиксированных сантиметрах у одного потеряется, у другого
+                  закроет сцену. */}
+              <FlangeTriad chain={chain} values={shownJoints} size={bounds.radius * 0.25} />
+              <BaseTriad size={bounds.radius * 0.25} />
+            </>
+          )}
+        </RobotViewer>
+      }
+    />
   );
 }
 

@@ -14,16 +14,11 @@
  */
 export function takeGoals(taken: readonly boolean[], reached: readonly boolean[]): boolean[] {
   const result: boolean[] = [];
-  // Тип указан явно: без него вывод зацикливается — `open` получает тип из
-  // `now`, а `now` считается из `open`.
-  let open: boolean = true;
 
   for (let index = 0; index < reached.length; index += 1) {
-    const already = taken[index] === true;
-    const now: boolean = already || (open && reached[index] === true);
-
-    result.push(now);
-    open = now;
+    // Открыта только цель, идущая сразу за взятой: первая — всегда.
+    const open = index === 0 || result[index - 1] === true;
+    result.push(taken[index] === true || (open && reached[index] === true));
   }
 
   return result;

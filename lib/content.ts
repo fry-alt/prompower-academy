@@ -1,6 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { compileMDX } from 'next-mdx-remote/rsc';
+import { parseTask, type Task } from '@prompower/sim-core';
 import type { ReactElement } from 'react';
 import { FALLBACK_LOCALE, lessonFileFor, orderOf, slugOf, tourFileFor } from './content-paths';
 import { parseTour, type Tour } from './tour';
@@ -39,7 +40,14 @@ export interface Lesson {
   readonly meta: LessonMeta;
   /** Готовый узел теории: собран на сервере, отрисовывается как есть. */
   readonly theory: ReactElement;
-  readonly task: unknown;
+  /**
+   * Задание, уже разобранное.
+   *
+   * Разбор живёт здесь, а не на странице: битый файл курса должен ломать
+   * сборку, и загрузчику всё равно надо знать, программное задание или ручное.
+   * Второй, более слабый ответ на тот же вопрос однажды разошёлся бы с первым.
+   */
+  readonly task: Task;
   readonly starter: object;
   /** Сценарий обучения. Урок без него — обычное дело. */
   readonly tour: Tour | null;
@@ -96,13 +104,13 @@ export async function loadLesson(slug: string, locale: string): Promise<Lesson |
       options: { parseFrontmatter: true },
     });
 
-    const task: unknown = JSON.parse(await readFile(join(root, 'task.json'), 'utf8'));
+    const task = parseTask(JSON.parse(await readFile(join(root, 'task.json'), 'utf8')));
 
     return {
       meta,
       theory: content,
       task,
-      starter: await loadStarter(root, isJogTask(task)),
+      starter: await loadStarter(root, task.mode === 'jog'),
       tour: await loadTour(root, files, locale),
       previous: course.lessons[index - 1] ?? null,
       next: course.lessons[index + 1] ?? null,
@@ -179,11 +187,6 @@ async function loadStarter(root: string, optional: boolean): Promise<object> {
     if (missing && optional) return {};
     throw error;
   }
-}
-
-/** Задание решается ползунками: стартовой программы у него не бывает. */
-function isJogTask(task: unknown): boolean {
-  return typeof task === 'object' && task !== null && 'mode' in task && task.mode === 'jog';
 }
 
 /**

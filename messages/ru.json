@@ -115,8 +115,7 @@
     "failed": "Задание не выполнено:",
     "goal": {
       "objectInZone": "Переставить «{object}» в «{zone}»",
-      "gripperState": "Оставить захват в положении «{state}»"
-,
+      "gripperState": "Оставить захват в положении «{state}»",
       "pointsVisited": "Побывать во всех отмеченных точках ({count})",
       "jointsAtPose": "Повторить показанную позу",
       "flangeAtPoint": "Подвести инструмент к метке"
