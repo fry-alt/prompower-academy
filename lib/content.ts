@@ -96,11 +96,13 @@ export async function loadLesson(slug: string, locale: string): Promise<Lesson |
       options: { parseFrontmatter: true },
     });
 
+    const task: unknown = JSON.parse(await readFile(join(root, 'task.json'), 'utf8'));
+
     return {
       meta,
       theory: content,
-      task: JSON.parse(await readFile(join(root, 'task.json'), 'utf8')) as unknown,
-      starter: await loadStarter(root),
+      task,
+      starter: await loadStarter(root, isJogTask(task)),
       tour: await loadTour(root, files, locale),
       previous: course.lessons[index - 1] ?? null,
       next: course.lessons[index + 1] ?? null,
@@ -164,14 +166,24 @@ async function subdirectories(path: string): Promise<string[]> {
  *
  * Понятие программного урока: в ручном задании программы нет вовсе, и файла
  * рядом с ним не лежит. Пустой холст — честный ответ на его отсутствие.
+ *
+ * Программному уроку файл по-прежнему обязателен. Иначе опечатка в имени
+ * проходила бы сборку и выкатывала урок с пустым редактором — а задание, в
+ * котором ждут готовых блоков, молча стало бы непроходимым.
  */
-async function loadStarter(root: string): Promise<object> {
+async function loadStarter(root: string, optional: boolean): Promise<object> {
   try {
     return JSON.parse(await readFile(join(root, 'starter.json'), 'utf8')) as object;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    const missing = (error as NodeJS.ErrnoException).code === 'ENOENT';
+    if (missing && optional) return {};
     throw error;
   }
+}
+
+/** Задание решается ползунками: стартовой программы у него не бывает. */
+function isJogTask(task: unknown): boolean {
+  return typeof task === 'object' && task !== null && 'mode' in task && task.mode === 'jog';
 }
 
 /**

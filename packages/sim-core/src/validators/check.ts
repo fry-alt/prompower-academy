@@ -93,6 +93,16 @@ function checkFlangeAtPoint(
   world: WorldState,
   chain: KinematicChain,
 ): string | null {
+  // Расхождение объясняется словами, а не исключением из кинематики: проверка
+  // зовётся на каждое движение ползунка прямо в отрисовке, и брошенная ошибка
+  // унесла бы с собой весь экран урока.
+  if (world.joints.length !== chain.joints.length) {
+    return (
+      `Робот собран с ${world.joints.length} углами, а у модели ${chain.joints.length} суставов: ` +
+      'положение инструмента не посчитать.'
+    );
+  }
+
   const actual = flangePose(chain, world.joints);
   const gap = distance(actual, goal.point);
   if (gap <= goal.tolerance) return null;

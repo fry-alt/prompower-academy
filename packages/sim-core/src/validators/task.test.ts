@@ -27,6 +27,20 @@ describe('режим задания', () => {
     ).toThrow(/ограничивать нечего/);
   });
 
+  it('подсказки в ручном задании так же мертвы и потому отвергаются', () => {
+    expect(() =>
+      parseTask({
+        ...MINIMAL,
+        mode: 'jog',
+        hints: [{ afterFailedAttempts: 2, text: 'Проверьте плечо.' }],
+      }),
+    ).toThrow(/неудачных попыток не бывает/);
+  });
+
+  it('пустой список подсказок ручному заданию не мешает', () => {
+    expect(parseTask({ ...MINIMAL, mode: 'jog', hints: [] }).hints).toEqual([]);
+  });
+
   it('в программном задании то же ограничение разбирается как прежде', () => {
     const task = parseTask({ ...MINIMAL, constraints: [{ type: 'maxStatements', value: 5 }] });
     expect(task.constraints).toEqual([{ type: 'maxStatements', value: 5 }]);

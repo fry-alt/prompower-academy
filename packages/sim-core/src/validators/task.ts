@@ -100,6 +100,10 @@ export function parseTask(input: unknown): Task {
     parseConstraint(item, `task.constraints[${index}]`),
   );
 
+  const hints = optionalArray(root['hints'], 'task.hints').map((item, index) =>
+    parseHint(item, `task.hints[${index}]`),
+  );
+
   // Ручное задание решается руками: инструкций нет, и ограничивать в нём нечего.
   // Молча пропустить такое ограничение значит показать ученику требование,
   // которое никогда не проверяется.
@@ -110,6 +114,14 @@ export function parseTask(input: unknown): Task {
     );
   }
 
+  // Подсказки открываются неудачными попытками, а попытка — это доработавшая
+  // программа. Прогона в ручном задании нет, и лестница молча осталась бы
+  // закрытой навсегда. Обратную связь там даёт сама цель: она объясняет, чего
+  // не хватает, прямо по ходу.
+  if (mode === 'jog' && hints.length > 0) {
+    throw new TaskParseError('task.hints', 'в ручном задании неудачных попыток не бывает');
+  }
+
   return {
     id: asNonEmptyString(root['id'], 'task.id'),
     mode,
@@ -118,9 +130,7 @@ export function parseTask(input: unknown): Task {
       parseGoal(goal, `task.goals[${index}]`),
     ),
     constraints,
-    hints: optionalArray(root['hints'], 'task.hints').map((item, index) =>
-      parseHint(item, `task.hints[${index}]`),
-    ),
+    hints,
   };
 }
 

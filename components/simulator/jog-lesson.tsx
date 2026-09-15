@@ -150,6 +150,7 @@ export function JogLesson({
                   check={jog.passed ? { passed: true, failures: [] } : null}
                   error={null}
                   taken={jog.taken}
+                  activeFailure={jog.active === null ? null : (jog.statuses[jog.active]?.failure ?? null)}
                   failedAttempts={0}
                 />
               </div>

@@ -281,6 +281,13 @@ describe('цель «фланец в точке»', () => {
     expect(checkTask(POINT, SHORT, standing([0]), [], CHAIN).passed).toBe(true);
   });
 
+  it('несобранная сцена объясняется словами, а не исключением', () => {
+    const result = checkTask(POINT, SHORT, standing([]), [], CHAIN);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures[0]).toMatch(/положение инструмента не посчитать/);
+  });
+
   it('называет расстояние до точки в миллиметрах', () => {
     const result = checkTask(POINT, SHORT, standing([Math.PI / 2]), [], CHAIN);
 

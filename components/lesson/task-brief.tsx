@@ -14,6 +14,7 @@ export function TaskBrief({
   check,
   error,
   taken,
+  activeFailure = null,
   failedAttempts,
 }: {
   task: Task;
@@ -23,6 +24,14 @@ export function TaskBrief({
   error: string | null;
   /** Отметки взятых целей. Пустой массив — отметок нет (программный урок). */
   taken: readonly boolean[];
+  /**
+   * Чего не хватает цели, над которой работают прямо сейчас.
+   *
+   * Живая подсказка ручного урока: расстояние до точки и градусы до позы
+   * пересчитываются на каждое движение ползунка и видны сразу. В программном
+   * уроке её нет — там то же самое приходит вердиктом после прогона.
+   */
+  activeFailure?: string | null;
   failedAttempts: number;
 }) {
   const t = useTranslations('lesson');
@@ -53,6 +62,12 @@ export function TaskBrief({
             </li>
           ))}
         </ul>
+
+        {activeFailure !== null && (
+          <p data-testid="goal-note" className="mt-2 text-sm text-ink-faint">
+            {activeFailure}
+          </p>
+        )}
       </section>
 
       <Verdict check={check} error={error} t={t} />

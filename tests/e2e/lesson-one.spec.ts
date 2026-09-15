@@ -40,6 +40,15 @@ test('до начала работы ни одна цель не взята', as
   await expect(page.getByTestId('verdict')).toHaveCount(0);
 });
 
+test('невзятая цель объясняет, чего ей не хватает', async ({ page }) => {
+  // Строку считает валидатор на каждое движение ползунка: пока цель не взята,
+  // ученик видит, насколько он мимо, а не только непоставленную галочку.
+  await expect(page.getByTestId('goal-note')).toContainText('Сустав');
+
+  await setJoints(page, POSE);
+  await expect(page.getByTestId('goal-note')).toContainText('от точки');
+});
+
 test('вторая цель не берётся раньше первой', async ({ page }) => {
   await setJoints(page, POINT);
 
