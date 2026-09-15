@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "body": [
+    {
+      "op": "comment",
+      "text": "Встать над линией деталей"
+    },
+    {
+      "op": "moveJ",
+      "joints": [
+        -0.2586,
+        1.4124,
+        -1.9244,
+        2.0829,
+        1.5708,
+        -1.8294
+      ],
+      "speed": 0.6,
+      "acc": 0.5
+    },
+    {
+      "op": "setVar",
+      "name": "i",
+      "value": {
+        "kind": "number",
+        "value": 0
+      }
+    },
+    {
+      "op": "repeat",
+      "times": 3,
+      "body": [
+        {
+          "op": "setVar",
+          "name": "y",
+          "value": {
+            "kind": "binary",
+            "operator": "+",
+            "left": {
+              "kind": "number",
+              "value": -100
+            },
+            "right": {
+              "kind": "binary",
+              "operator": "*",
+              "left": {
+                "kind": "variable",
+                "name": "i"
+              },
+              "right": {
+                "kind": "number",
+                "value": 100
+              }
+            }
+          }
+        },
+        {
+          "op": "moveL",
+          "pose": {
+            "x": 0.45,
+            "y": {
+              "kind": "binary",
+              "operator": "/",
+              "left": {
+                "kind": "variable",
+                "name": "y"
+              },
+              "right": {
+                "kind": "number",
+                "value": 1000
+              }
+            },
+            "z": 0.22,
+            "rx": 3.141593,
+            "ry": 0,
+            "rz": 0
+          },
+          "speed": 0.6,
+          "acc": 0.5
+        },
+        {
+          "op": "moveL",
+          "pose": {
+            "x": 0.45,
+            "y": {
+              "kind": "binary",
+              "operator": "/",
+              "left": {
+                "kind": "variable",
+                "name": "y"
+              },
+              "right": {
+                "kind": "number",
+                "value": 1000
+              }
+            },
+            "z": 0.0605,
+            "rx": 3.141593,
+            "ry": 0,
+            "rz": 0
+          },
+          "speed": 0.6,
+          "acc": 0.5
+        },
+        {
+          "op": "gripper",
+          "action": "close"
+        },
+        {
+          "op": "moveL",
+          "pose": {
+            "x": 0.45,
+            "y": {
+              "kind": "binary",
+              "operator": "/",
+              "left": {
+                "kind": "variable",
+                "name": "y"
+              },
+              "right": {
+                "kind": "number",
+                "value": 1000
+              }
+            },
+            "z": 0.22,
+            "rx": 3.141593,
+            "ry": 0,
+            "rz": 0
+          },
+          "speed": 0.6,
+          "acc": 0.5
+        },
+        {
+          "op": "moveL",
+          "pose": {
+            "x": 0.25,
+            "y": {
+              "kind": "binary",
+              "operator": "/",
+              "left": {
+                "kind": "variable",
+                "name": "y"
+              },
+              "right": {
+                "kind": "number",
+                "value": 1000
+              }
+            },
+            "z": 0.22,
+            "rx": 3.141593,
+            "ry": 0,
+            "rz": 0
+          },
+          "speed": 0.6,
+          "acc": 0.5
+        },
+        {
+          "op": "moveL",
+          "pose": {
+            "x": 0.25,
+            "y": {
+              "kind": "binary",
+              "operator": "/",
+              "left": {
+                "kind": "variable",
+                "name": "y"
+              },
+              "right": {
+                "kind": "number",
+                "value": 1000
+              }
+            },
+            "z": 0.0605,
+            "rx": 3.141593,
+            "ry": 0,
+            "rz": 0
+          },
+          "speed": 0.6,
+          "acc": 0.5
+        },
+        {
+          "op": "gripper",
+          "action": "open"
+        },
+        {
+          "op": "moveL",
+          "pose": {
+            "x": 0.25,
+            "y": {
+              "kind": "binary",
+              "operator": "/",
+              "left": {
+                "kind": "variable",
+                "name": "y"
+              },
+              "right": {
+                "kind": "number",
+                "value": 1000
+              }
+            },
+            "z": 0.22,
+            "rx": 3.141593,
+            "ry": 0,
+            "rz": 0
+          },
+          "speed": 0.6,
+          "acc": 0.5
+        },
+        {
+          "op": "setVar",
+          "name": "i",
+          "value": {
+            "kind": "binary",
+            "operator": "+",
+            "left": {
+              "kind": "variable",
+              "name": "i"
+            },
+            "right": {
+              "kind": "number",
+              "value": 1
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
