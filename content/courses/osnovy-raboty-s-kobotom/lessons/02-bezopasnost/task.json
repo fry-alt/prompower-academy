@@ -1,0 +1,23 @@
+{
+  "id": "bezopasnost",
+  "mode": "jog",
+  "world": {
+    "objects": [],
+    "zones": [
+      {
+        "id": "зона оператора",
+        "position": { "x": 0.3, "y": -0.15, "z": 0.35 },
+        "size": { "x": 0.3, "y": 0.25, "z": 0.45 }
+      }
+    ]
+  },
+  "goals": [
+    {
+      "type": "flangeAtPoint",
+      "point": { "x": 0.375, "y": -0.42, "z": 0.296 },
+      "tolerance": 0.05
+    }
+  ],
+  "constraints": [{ "type": "keepOut", "zone": "зона оператора" }],
+  "hints": []
+}
