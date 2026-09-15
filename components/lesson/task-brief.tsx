@@ -15,6 +15,7 @@ export function TaskBrief({
   error,
   taken,
   activeFailure = null,
+  violation = null,
   failedAttempts,
 }: {
   task: Task;
@@ -32,6 +33,11 @@ export function TaskBrief({
    * уроке её нет — там то же самое приходит вердиктом после прогона.
    */
   activeFailure?: string | null;
+  /**
+   * Нарушенный запрет. Не провал цели, а состояние, которое надо снять, —
+   * поэтому показывается отдельно и до вердикта.
+   */
+  violation?: string | null;
   failedAttempts: number;
 }) {
   const t = useTranslations('lesson');
@@ -69,6 +75,17 @@ export function TaskBrief({
           </p>
         )}
       </section>
+
+      {violation !== null && (
+        <div
+          data-testid="violation"
+          role="status"
+          className="mt-3 rounded-panel border-l-2 border-warn bg-surface-1 p-3 text-sm text-warn"
+        >
+          <p className="mb-1 font-medium">{t('violation')}</p>
+          <p>{violation}</p>
+        </div>
+      )}
 
       <Verdict check={check} error={error} t={t} />
       <Hints task={task} failedAttempts={failedAttempts} t={t} />

@@ -121,6 +121,7 @@
       "flangeAtPoint": "Bring the tool to the marker"
     },
     "goalDone": "Goal reached",
+    "violation": "Safety rule broken",
     "jog": {
       "title": "Joints",
       "hint": "Drag the sliders — the robot follows. A goal is marked as soon as you reach it."

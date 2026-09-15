@@ -11,6 +11,7 @@ import type { Tour } from '@/lib/tour';
 import type { RobotBounds } from './fit-robot';
 import { GhostRobot } from './ghost-robot';
 import { JointPanel } from './joint-panel';
+import { KeepOutZone } from './keep-out-zone';
 import { RobotViewer } from './robot-viewer';
 import { TargetPoint } from './target-point';
 import { taskBounds } from './task-bounds';
@@ -65,6 +66,18 @@ export function JogLesson({
 
   const framed = useMemo(() => taskBounds(bounds, task), [bounds, task]);
 
+  // Запретные зоны берутся из ограничений: зона, на которую никто не ссылается,
+  // в сцене и не нужна.
+  const keepOut = useMemo(
+    () =>
+      task.constraints.flatMap((constraint) =>
+        constraint.type === 'keepOut'
+          ? task.world.zones.filter((zone) => zone.id === constraint.zone)
+          : [],
+      ),
+    [task],
+  );
+
   return (
     <LessonShell
       plugin={plugin}
@@ -95,6 +108,7 @@ export function JogLesson({
               error={null}
               taken={jog.taken}
               activeFailure={jog.activeStatus?.failure ?? null}
+              violation={jog.violation}
               failedAttempts={0}
             />
           </LessonBrief>
@@ -121,6 +135,10 @@ export function JogLesson({
           bounds={framed}
           onFpsSample={onFps}
         >
+          {keepOut.map((zone) => (
+            <KeepOutZone key={zone.id} zone={zone} />
+          ))}
+
           {active?.type === 'jointsAtPose' && (
             <GhostRobot source={robot} jointNames={jointNames} values={active.joints} />
           )}
