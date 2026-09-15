@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   checkGoals,
+  checkKeepOuts,
   createWorld,
   setJoints as setWorldJoints,
   type GoalStatus,
@@ -27,6 +28,11 @@ export interface JogTask {
   readonly taken: readonly boolean[];
   /** Цель, над которой работают сейчас, вместе с тем, чего ей не хватает. */
   readonly activeStatus: GoalStatus | null;
+  /**
+   * Нарушенный запрет. Держится, пока его не снимут сбросом: урок, который
+   * забывает нарушение, стоит ученику выехать обратно, учит ровно неверному.
+   */
+  readonly violation: string | null;
   readonly passed: boolean;
   readonly setJoint: (index: number, radians: number) => void;
   readonly reset: () => void;
@@ -35,6 +41,7 @@ export interface JogTask {
 interface JogState {
   readonly joints: readonly number[];
   readonly taken: readonly boolean[];
+  readonly violation: string | null;
 }
 
 export function useJogTask(
@@ -59,6 +66,7 @@ export function useJogTask(
   const [state, setState] = useState<JogState>(() => ({
     joints: start,
     taken: task.goals.map(() => false),
+    violation: null,
   }));
 
   const statuses = useMemo(
@@ -67,14 +75,21 @@ export function useJogTask(
   );
 
   const advance = useCallback(
-    (joints: readonly number[], taken: readonly boolean[]): JogState => ({
-      joints,
-      taken: takeGoals(
-        taken,
-        check(setWorldJoints(base, joints)).map((status) => status.failure === null),
-      ),
-    }),
-    [check, base],
+    (joints: readonly number[], taken: readonly boolean[], violation: string | null): JogState => {
+      const world = setWorldJoints(base, joints);
+
+      return {
+        joints,
+        taken: takeGoals(
+          taken,
+          check(world).map((status) => status.failure === null),
+        ),
+        // Первое нарушение и остаётся: последующие ничего не добавляют, а
+        // затирать его новым значит терять то, с чего всё началось.
+        violation: violation ?? (checkKeepOuts(task, world, chain)[0] ?? null),
+      };
+    },
+    [check, base, task, chain],
   );
 
   const active = state.taken.findIndex((value) => !value);
@@ -83,22 +98,26 @@ export function useJogTask(
     joints: state.joints,
     taken: state.taken,
     activeStatus: active === -1 ? null : (statuses[active] ?? null),
-    passed: state.taken.length > 0 && state.taken.every(Boolean),
+    violation: state.violation,
+    // Пока нарушение висит, задание не зачтено, даже если все цели взяты.
+    passed: state.violation === null && state.taken.length > 0 && state.taken.every(Boolean),
     setJoint: useCallback(
       (index: number, radians: number) => {
         setState((current) =>
           advance(
             current.joints.map((value, i) => (i === index ? radians : value)),
             current.taken,
+            current.violation,
           ),
         );
       },
       [advance],
     ),
-    // Сброс возвращает робота в начало, но не отбирает взятые цели: ученик
-    // сбрасывает позу как раз затем, чтобы зайти на следующую цель заново.
+    // Сброс возвращает робота в начало и снимает нарушение: это и есть
+    // выученное действие — вернуться в известное состояние и пройти иначе.
+    // Взятые цели при этом остаются: их ученик уже заработал.
     reset: useCallback(
-      () => setState((current) => advance(start, current.taken)),
+      () => setState((current) => advance(start, current.taken, null)),
       [advance, start],
     ),
   };
