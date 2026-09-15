@@ -4,6 +4,7 @@ import type {
   IoBank,
   Program,
   Statement,
+  Value,
 } from '@prompower/sim-core';
 
 /**
@@ -129,12 +130,12 @@ function emit(statement: Statement, settings: Settings, depth: number): string[]
       const { pose } = statement;
       // SDK принимает положение в миллиметрах, ориентацию — в радианах.
       const target = [
-        (pose.x * MM).toFixed(3),
-        (pose.y * MM).toFixed(3),
-        (pose.z * MM).toFixed(3),
-        pose.rx.toFixed(6),
-        pose.ry.toFixed(6),
-        pose.rz.toFixed(6),
+        millimetres(pose.x),
+        millimetres(pose.y),
+        millimetres(pose.z),
+        radians(pose.rx),
+        radians(pose.ry),
+        radians(pose.rz),
       ].join(', ');
       const speed = (statement.speed * settings.maxLinearSpeed).toFixed(1);
       return [
@@ -228,6 +229,33 @@ function condition(cond: Condition, settings: Settings): string {
     case 'or':
       return `(${condition(cond.left, settings)}) or (${condition(cond.right, settings)})`;
   }
+}
+
+/**
+ * Координата в миллиметрах.
+ *
+ * Выражение из редактора приходит делённым на тысячу — ядро хранит метры.
+ * Умножать его обратно значило бы печатать `(y / 1000) * 1000`, поэтому деление
+ * сокращается: в файле стоит то, что собрал ученик, и сразу в миллиметрах.
+ */
+function millimetres(value: Value): string {
+  if (typeof value === 'number') return (value * MM).toFixed(3);
+
+  if (
+    value.kind === 'binary' &&
+    value.operator === '/' &&
+    value.right.kind === 'number' &&
+    value.right.value === MM
+  ) {
+    return expression(value.left);
+  }
+
+  return `(${expression(value)}) * ${MM}`;
+}
+
+/** Углы уже в радианах: переводить нечего, но выражение печатается как есть. */
+function radians(value: Value): string {
+  return typeof value === 'number' ? value.toFixed(6) : expression(value);
 }
 
 function expression(value: Expression): string {

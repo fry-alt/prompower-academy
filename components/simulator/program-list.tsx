@@ -1,7 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { Program, Statement } from '@prompower/sim-core';
+import type {
+  BinaryOperator,
+  Expression,
+  Program,
+  Statement,
+  Value,
+} from '@prompower/sim-core';
 
 /**
  * Программа списком, с подсветкой исполняемой инструкции.
@@ -82,6 +88,39 @@ function bank(value: 'cabinet' | 'tool', t: Translate): string {
   return value === 'cabinet' ? t('bank.cabinet') : t('bank.tool');
 }
 
-function mm(metres: number): string {
-  return `${Math.round(metres * 1000)}`;
+/**
+ * Координата списком: число — в миллиметрах, выражение — как оно написано.
+ *
+ * Выражение из редактора приходит делённым на тысячу, потому что ядро хранит
+ * метры. Показывать это деление ученику незачем: в блоке он набирал
+ * миллиметры, их и должен увидеть в списке.
+ */
+function mm(value: Value): string {
+  if (typeof value === 'number') return `${Math.round(value * 1000)}`;
+
+  if (
+    value.kind === 'binary' &&
+    value.operator === '/' &&
+    value.right.kind === 'number' &&
+    value.right.value === 1000
+  ) {
+    return show(value.left);
+  }
+
+  return show(value);
 }
+
+/** Выражение человеческой строкой: `−100 + i × 100`. */
+function show(expression: Expression): string {
+  switch (expression.kind) {
+    case 'number':
+      return expression.value < 0 ? `−${Math.abs(expression.value)}` : `${expression.value}`;
+    case 'variable':
+      return expression.name;
+    case 'binary':
+      return `${show(expression.left)} ${SIGNS[expression.operator]} ${show(expression.right)}`;
+  }
+}
+
+/** Знаки типографские: это подпись для человека, а не выражение для машины. */
+const SIGNS: Record<BinaryOperator, string> = { '+': '+', '-': '−', '*': '×', '/': '÷' };

@@ -23,6 +23,30 @@ export interface Pose {
   readonly rz: number;
 }
 
+/**
+ * Значение в программе: число либо выражение, считаемое на ходу.
+ *
+ * Литерал остаётся числом, а не оборачивается в `{kind:'number'}`: иначе каждое
+ * задание и каждая стартовая программа в репозитории пришлось бы переписать
+ * ради единообразия, которого никто не увидит.
+ */
+export type Value = number | Expression;
+
+/**
+ * Цель движения в программе: любая координата может считаться по переменным.
+ *
+ * Не то же, что `Pose`: та — числа, и ею живёт кинематика. Интерпретатор
+ * разрешает выражения по текущим переменным и отдаёт планировщику числовую позу.
+ */
+export interface PoseInput {
+  readonly x: Value;
+  readonly y: Value;
+  readonly z: Value;
+  readonly rx: Value;
+  readonly ry: Value;
+  readonly rz: Value;
+}
+
 export type BinaryOperator = '+' | '-' | '*' | '/';
 
 export type Expression =
@@ -79,7 +103,7 @@ export interface StatementMeta {
 type MoveJ = { readonly op: 'moveJ'; readonly joints: readonly number[] } & MotionParams;
 
 /** Движение по прямой: фланец идёт в точку по отрезку. */
-type MoveL = { readonly op: 'moveL'; readonly pose: Pose } & MotionParams;
+type MoveL = { readonly op: 'moveL'; readonly pose: PoseInput } & MotionParams;
 
 type Command =
   | MoveJ

@@ -6,9 +6,10 @@ import {
   type Condition,
   type Expression,
   type GripperAction,
-  type Pose,
+  type PoseInput,
   type Program,
   type Statement,
+  type Value,
 } from './ast';
 
 /**
@@ -75,7 +76,7 @@ function parseCommand(record: Record<string, unknown>, path: string): Statement 
     case 'moveL':
       return {
         op,
-        pose: parsePose(record['pose'], `${path}.pose`),
+        pose: parsePoseInput(record['pose'], `${path}.pose`),
         ...parseMotionParams(record, path),
       };
 
@@ -158,16 +159,21 @@ function parseMotionParams(record: Record<string, unknown>, path: string): {
   };
 }
 
-function parsePose(input: unknown, path: string): Pose {
+function parsePoseInput(input: unknown, path: string): PoseInput {
   const record = asRecord(input, path);
   return {
-    x: asNumber(record['x'], `${path}.x`),
-    y: asNumber(record['y'], `${path}.y`),
-    z: asNumber(record['z'], `${path}.z`),
-    rx: asNumber(record['rx'], `${path}.rx`),
-    ry: asNumber(record['ry'], `${path}.ry`),
-    rz: asNumber(record['rz'], `${path}.rz`),
+    x: parseValue(record['x'], `${path}.x`),
+    y: parseValue(record['y'], `${path}.y`),
+    z: parseValue(record['z'], `${path}.z`),
+    rx: parseValue(record['rx'], `${path}.rx`),
+    ry: parseValue(record['ry'], `${path}.ry`),
+    rz: parseValue(record['rz'], `${path}.rz`),
   };
+}
+
+/** Координата — либо число, либо выражение: правило одно на все шесть. */
+function parseValue(input: unknown, path: string): Value {
+  return typeof input === 'number' ? asNumber(input, path) : parseExpression(input, path);
 }
 
 function parseExpression(input: unknown, path: string): Expression {

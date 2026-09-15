@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Program, Statement } from '../program/ast';
+import type { Pose, Program, Statement } from '../program/ast';
 import {
   createWorld,
   digitalOutput,
@@ -489,5 +489,50 @@ describe('подсветка текущего блока', () => {
 
   it('после завершения не подсвечивает ничего', () => {
     expect(run(program({ op: 'comment', text: 'всё' })).current).toBeNull();
+  });
+});
+
+describe('движение по вычисленной координате', () => {
+  it('планировщик получает число, а не выражение', () => {
+    // `jumpPlanner` позу не смотрит, поэтому здесь свой: он её запоминает.
+    const seen: Pose[] = [];
+    const recording: MotionPlanner = {
+      ...jumpPlanner,
+      planLinear: (_from, target) => {
+        seen.push(target);
+        return planned({ joints: [0, 0, 0, 0, 0, 0], ticks: 10, waypoints: [[0, 0, 0, 0, 0, 0]] });
+      },
+    };
+
+    const result = run(
+      program(
+        { op: 'setVar', name: 'y', value: { kind: 'number', value: 100 } },
+        {
+          op: 'moveL',
+          pose: {
+            x: 0.35,
+            y: {
+              kind: 'binary',
+              operator: '/',
+              left: { kind: 'variable', name: 'y' },
+              right: { kind: 'number', value: 1000 },
+            },
+            z: 0.2,
+            rx: Math.PI,
+            ry: 0,
+            rz: 0,
+          },
+          speed: 0.5,
+          acc: 0.5,
+        },
+      ),
+      world(),
+      recording,
+    );
+
+    expect(result.error).toBeNull();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.y).toBeCloseTo(0.1, 9);
+    expect(seen[0]!.x).toBeCloseTo(0.35, 9);
   });
 });

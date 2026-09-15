@@ -96,10 +96,12 @@ export {
   type GripperAction,
   type MotionParams,
   type Pose,
+  type PoseInput,
   type Program,
   type Statement,
   type StatementMeta,
   type StatementOp,
+  type Value,
 } from './program/ast';
 
 export { parseProgram, ProgramParseError } from './program/parse';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Program } from '@prompower/sim-core';
+import type { Program, Value } from '@prompower/sim-core';
 import { toPython } from './to-python';
 
 function program(...body: Program['body']): Program {
@@ -187,5 +187,35 @@ describe('отступы', () => {
     expect(code).toContain('    for _ in range(2):');
     expect(code).toContain('        for _ in range(3):');
     expect(code).toContain('            time.sleep(0.01)');
+  });
+});
+
+describe('вычисляемые координаты', () => {
+  const computed = (y: Value): string =>
+    toPython(
+      program(
+        { op: 'setVar', name: 'y', value: { kind: 'number', value: -100 } },
+        { op: 'moveL', pose: { x: 0.45, y, z: 0.22, rx: Math.PI, ry: 0, rz: 0 }, ...MOVE },
+      ),
+    );
+
+  it('переменная попадает в скрипт под своим именем', () => {
+    const code = computed({
+      kind: 'binary',
+      operator: '/',
+      left: { kind: 'variable', name: 'y' },
+      right: { kind: 'number', value: 1000 },
+    });
+
+    // Деление на тысячу сокращается с обратным умножением: SDK принимает
+    // миллиметры, и в файле стоит ровно то, что собрал ученик.
+    expect(code).toContain('y = -100');
+    expect(code).toMatch(/linear_move\(\[450\.000, y, 220\.000/);
+    expect(code).not.toContain('/ 1000');
+  });
+
+  it('выражение без деления печатается с переводом в миллиметры', () => {
+    const code = computed({ kind: 'variable', name: 'y' });
+    expect(code).toMatch(/\(y\) \* 1000/);
   });
 });

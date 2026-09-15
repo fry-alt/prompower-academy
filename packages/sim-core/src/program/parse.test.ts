@@ -204,3 +204,52 @@ describe('ProgramParseError', () => {
     }
   });
 });
+
+describe('вычисляемая координата', () => {
+  const base = {
+    version: 1,
+    body: [
+      {
+        op: 'moveL',
+        pose: {
+          x: 0.45,
+          y: {
+            kind: 'binary',
+            operator: '/',
+            left: { kind: 'variable', name: 'y' },
+            right: { kind: 'number', value: 1000 },
+          },
+          z: 0.22,
+          rx: 3.1416,
+          ry: 0,
+          rz: 0,
+        },
+        speed: 0.5,
+        acc: 0.5,
+      },
+    ],
+  };
+
+  it('принимает выражение вместо числа', () => {
+    const program = parseProgram(base);
+    const statement = program.body[0]!;
+    if (statement.op !== 'moveL') throw new Error('ожидалось движение по прямой');
+
+    expect(statement.pose.x).toBe(0.45);
+    expect(statement.pose.y).toEqual({
+      kind: 'binary',
+      operator: '/',
+      left: { kind: 'variable', name: 'y' },
+      right: { kind: 'number', value: 1000 },
+    });
+  });
+
+  it('мусор вместо координаты называет место', () => {
+    const broken = {
+      ...base,
+      body: [{ ...base.body[0], pose: { ...base.body[0]!.pose, y: 'сюда' } }],
+    };
+
+    expect(() => parseProgram(broken)).toThrow(/body\[0\]\.pose\.y/);
+  });
+});

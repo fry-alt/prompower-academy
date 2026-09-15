@@ -1,4 +1,12 @@
-import type { Condition, Expression, Program, Statement } from '../program/ast';
+import type {
+  Condition,
+  Expression,
+  Pose,
+  PoseInput,
+  Program,
+  Statement,
+  Value,
+} from '../program/ast';
 import { ioBankLabel } from '../io';
 import { TICK_MS } from '../tick';
 import {
@@ -224,14 +232,34 @@ function execute(
         planner,
       );
 
-    case 'moveL':
+    case 'moveL': {
+      // Координаты считаются здесь, а не в планировщике: планировщик знает
+      // кинематику и ничего не знает про переменные программы.
+      const pose = resolvePose(statement.pose, state.world.variables);
       return executeMotion(
         state,
         statement,
-        planner.planLinear(state.world.joints, statement.pose, statement),
+        planner.planLinear(state.world.joints, pose, statement),
         planner,
       );
+    }
   }
+}
+
+/** Числовая поза из вычисляемой: выражения разрешаются по текущим переменным. */
+function resolvePose(pose: PoseInput, variables: Readonly<Record<string, number>>): Pose {
+  return {
+    x: resolveValue(pose.x, variables),
+    y: resolveValue(pose.y, variables),
+    z: resolveValue(pose.z, variables),
+    rx: resolveValue(pose.rx, variables),
+    ry: resolveValue(pose.ry, variables),
+    rz: resolveValue(pose.rz, variables),
+  };
+}
+
+function resolveValue(value: Value, variables: Readonly<Record<string, number>>): number {
+  return typeof value === 'number' ? value : evaluate(value, variables);
 }
 
 /**
