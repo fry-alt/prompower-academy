@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { LessonHeader } from '@/components/lesson/lesson-header';
 import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
+import { TaskBrief } from '@/components/lesson/task-brief';
 import { TaskOnDesktop } from '@/components/lesson/task-on-desktop';
 import { TheoryView } from '@/components/lesson/theory-view';
 import { GuidedTour } from '@/components/lesson/guided-tour';
@@ -12,11 +13,9 @@ import type { Tour } from '@/lib/tour';
 import {
   alignToolDown,
   digitalInput,
-  earnedHints,
   jogPose,
   jogToPose,
   type JogAxis,
-  type Goal,
   type JogFrame,
   type JogResult,
   type Pose,
@@ -35,6 +34,7 @@ import { BaseTriad, FlangeTriad } from './axes-triad';
 import { useAnimatedJoints } from './use-animated-joints';
 import type { TeachRequest } from './block-editor';
 import { GhostRobot } from './ghost-robot';
+import { JogLesson } from './jog-lesson';
 import { ProgramPanel } from './program-panel';
 import { TeachPanel, type TeachNote } from './teach-panel';
 import { RobotViewer } from './robot-viewer';
@@ -123,6 +123,27 @@ function WideLesson({ plugin, task, tour, starter, title, theory, previous, next
 
   if (model.status === 'loading' || chain.status === 'loading') {
     return <p className="p-5 text-sm text-ink-faint">{t('loading')}</p>;
+  }
+
+  // Ручное задание собирается своим экраном: программы в нём нет, и хук
+  // прогона поднимать незачем.
+  if (task.mode === 'jog') {
+    return (
+      <JogLesson
+        plugin={plugin}
+        task={task}
+        tour={tour}
+        title={title}
+        theory={theory}
+        previous={previous}
+        next={next}
+        robot={model.robot}
+        chain={chain.chain}
+        bounds={model.bounds}
+        fps={fps}
+        onFps={setFps}
+      />
+    );
   }
 
   return (
@@ -365,7 +386,13 @@ function Workspace({
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="max-h-[45%] shrink-0 overflow-y-auto border-b border-line p-5">
                 {teaching === null ? (
-                  <TaskBrief task={task} runner={runner} t={t} />
+                  <TaskBrief
+                    task={task}
+                    check={runner.status === 'done' ? runner.check : null}
+                    error={runner.run.error}
+                    taken={[]}
+                    failedAttempts={runner.failedAttempts}
+                  />
                 ) : (
                   <TeachPanel
                     joints={plugin.joints}
@@ -463,125 +490,3 @@ function Workspace({
   );
 }
 
-/** Условие задания и итог прогона — то, что видно, пока точку не показывают. */
-function TaskBrief({
-  task,
-  runner,
-  t,
-}: {
-  task: Task;
-  runner: ReturnType<typeof useProgramRun>;
-  t: ReturnType<typeof useTranslations<'lesson'>>;
-}) {
-  return (
-    <>
-      <section>
-        <h2 className="mb-2 text-sm font-medium">{t('goals')}</h2>
-        <ul className="flex flex-col gap-1 text-sm text-ink-dim">
-          {task.goals.map((goal, index) => (
-            <li key={index}>{goalText(goal, t)}</li>
-          ))}
-        </ul>
-      </section>
-
-      <Verdict runner={runner} t={t} />
-      <Hints task={task} failedAttempts={runner.failedAttempts} t={t} />
-    </>
-  );
-}
-
-/** Условие цели по-русски. Switch, а не цепочка вопросов: целей будет больше. */
-function goalText(goal: Goal, t: ReturnType<typeof useTranslations<'lesson'>>): string {
-  switch (goal.type) {
-    case 'objectInZone':
-      return t('goal.objectInZone', { object: goal.object, zone: goal.zone });
-    case 'gripperState':
-      return t('goal.gripperState', { state: t(`gripper.${goal.state}`) });
-    case 'pointsVisited':
-      return t('goal.pointsVisited', { count: goal.points.length });
-    case 'jointsAtPose':
-      return t('goal.jointsAtPose');
-    case 'flangeAtPoint':
-      return t('goal.flangeAtPoint');
-  }
-}
-
-/**
- * Лестница подсказок урока.
- *
- * Ступени открываются неудачными попытками и остаются на экране: открывшаяся
- * вторая подсказка не отменяет первую. Пока ни одна не заслужена, раздела нет —
- * обещание «здесь появятся подсказки» ученику ничего не даёт.
- */
-function Hints({
-  task,
-  failedAttempts,
-  t,
-}: {
-  task: Task;
-  failedAttempts: number;
-  t: ReturnType<typeof useTranslations<'lesson'>>;
-}) {
-  const hints = earnedHints(task, failedAttempts);
-  if (hints.length === 0) return null;
-
-  return (
-    <section data-testid="hints" className="mt-4">
-      <h2 className="mb-2 text-sm font-medium">{t('hints.title')}</h2>
-
-      <ol className="flex flex-col gap-2">
-        {hints.map((hint) => (
-          <li
-            key={hint.afterFailedAttempts}
-            data-testid="hint"
-            className="rounded-panel border-l-2 border-brand/60 bg-surface-1 p-3 text-sm text-ink-dim"
-          >
-            {hint.text}
-          </li>
-        ))}
-      </ol>
-
-      {hints.length < task.hints.length && (
-        <p className="mt-2 text-xs text-ink-faint">{t('hints.next')}</p>
-      )}
-    </section>
-  );
-}
-
-/** Итог прогона: ошибка исполнения либо результат автопроверки. */
-function Verdict({
-  runner,
-  t,
-}: {
-  runner: ReturnType<typeof useProgramRun>;
-  t: ReturnType<typeof useTranslations<'lesson'>>;
-}) {
-  if (runner.run.error !== null) {
-    return (
-      <p data-testid="verdict" className="rounded-panel bg-surface-1 p-3 text-sm text-warn">
-        {runner.run.error}
-      </p>
-    );
-  }
-
-  if (runner.status !== 'done' || runner.check === null) return null;
-
-  if (runner.check.passed) {
-    return (
-      <p data-testid="verdict" className="rounded-panel bg-surface-1 p-3 text-sm text-ok">
-        {t('passed')}
-      </p>
-    );
-  }
-
-  return (
-    <div data-testid="verdict" className="rounded-panel bg-surface-1 p-3 text-sm text-warn">
-      <p className="mb-1 font-medium">{t('failed')}</p>
-      <ul className="flex flex-col gap-1">
-        {runner.check.failures.map((failure) => (
-          <li key={failure}>{failure}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
