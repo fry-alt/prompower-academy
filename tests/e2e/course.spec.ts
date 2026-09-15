@@ -8,6 +8,16 @@ test('первая страница показывает карту курса',
   await expect(page.getByText('Инструмент и захват')).toBeVisible();
 });
 
+test('курс начинается с урока о коботе', async ({ page }) => {
+  await page.goto('/ru');
+
+  // Порядок уроков живёт в числовом префиксе папки и больше нигде: проверяем,
+  // что карта показывает именно его, а не порядок чтения каталога.
+  const titles = await page.getByTestId('lesson-title').allInnerTexts();
+  expect(titles[0]).toBe('Знакомство с коботом');
+  expect(titles).toHaveLength(4);
+});
+
 test('из карты курса открывается урок', async ({ page }) => {
   await page.goto('/ru');
   await page.getByRole('link', { name: /Инструмент и захват/ }).click();

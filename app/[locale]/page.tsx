@@ -56,7 +56,7 @@ export default async function CourseMapPage({
                   </span>
 
                   <span className="flex flex-1 flex-col gap-1">
-                    <span className="text-sm font-medium">{lesson.title}</span>
+                    <span data-testid="lesson-title" className="text-sm font-medium">{lesson.title}</span>
                     <span className="text-sm text-ink-dim">{lesson.description}</span>
                   </span>
 
