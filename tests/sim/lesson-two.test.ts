@@ -80,6 +80,28 @@ describe('задание «безопасность»', () => {
     expect(crossed.length).toBeGreaterThan(5);
   });
 
+  it('до цели можно дойти ползунками, ни разу не задев зону', () => {
+    // Ползунки двигают по одному, и промежуточные позы — тоже позы. Урок
+    // решаем, только если существует порядок, в котором ни одна из них не
+    // входит в зону: база поворачивается последней, когда рука уже опущена.
+    const order = [1, 2, 4, 0];
+    let joints = [...jakaZu7.homePose];
+
+    for (const index of order) {
+      joints = joints.map((value, i) => (i === index ? DETOUR[index]! : value));
+      expect(checkKeepOuts(task, standing(joints), chain)).toEqual([]);
+    }
+
+    expect(checkGoals(task, standing(joints), [], chain)[0]!.failure).toBeNull();
+  });
+
+  it('поворот базы первым проносит руку над зоной: порядок в этом задании решает', () => {
+    const joints = jakaZu7.homePose.map((value, i) => (i === 0 ? DETOUR[0]! : value));
+    const dropped = joints.map((value, i) => (i === 1 ? DETOUR[1]! : value));
+
+    expect(checkKeepOuts(task, standing(dropped), chain)[0]).toMatch(/вошёл в зону/);
+  });
+
   it('цель лежит вне зоны вместе со своим допуском', () => {
     const goal = task.goals[0]!;
     if (goal.type !== 'flangeAtPoint') throw new Error('цель должна быть точкой');
