@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Program } from '../program/ast';
+import { EMPTY_CHAIN, type KinematicChain } from '../kinematics/chain';
+import { fromTranslation, IDENTITY } from '../kinematics/transform';
 import { createWorld, graspObject, moveObject, releaseObject, type EventLog } from '../world/state';
 import { checkTask, earnedHints } from './check';
 import { parseTask, type Task } from './task';
@@ -45,7 +47,7 @@ function solved() {
 
 describe('checkTask', () => {
   it('засчитывает выполненное задание', () => {
-    const result = checkTask(TASK, SHORT, solved(), [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }]);
+    const result = checkTask(TASK, SHORT, solved(), [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }], EMPTY_CHAIN);
 
     expect(result.passed).toBe(true);
     expect(result.failures).toEqual([]);
@@ -53,7 +55,7 @@ describe('checkTask', () => {
 
   it('называет зону, в которой деталь оказалась', () => {
     // Кубик остался там, где лежал, — это зона A.
-    const result = checkTask(TASK, SHORT, world(), [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }]);
+    const result = checkTask(TASK, SHORT, world(), [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }], EMPTY_CHAIN);
 
     expect(result.passed).toBe(false);
     expect(result.failures[0]).toBe(
@@ -63,14 +65,14 @@ describe('checkTask', () => {
 
   it('объясняет, что схват сомкнулся впустую', () => {
     const outside = moveObject(world(), 'cube-1', { x: 0.9, y: 0.02, z: 0 });
-    const result = checkTask(TASK, SHORT, outside, [{ kind: 'graspMissed', tick: 0 }]);
+    const result = checkTask(TASK, SHORT, outside, [{ kind: 'graspMissed', tick: 0 }], EMPTY_CHAIN);
 
     expect(result.failures[0]).toMatch(/схват смыкался, но она не попала между губок/);
   });
 
   it('объясняет, что деталь вообще не брали', () => {
     const outside = moveObject(world(), 'cube-1', { x: 0.9, y: 0.02, z: 0 });
-    const result = checkTask(TASK, SHORT, outside, []);
+    const result = checkTask(TASK, SHORT, outside, [], EMPTY_CHAIN);
 
     expect(result.failures[0]).toMatch(/её так и не взяли захватом/);
   });
@@ -81,19 +83,19 @@ describe('checkTask', () => {
       'cube-1',
       ZERO,
     );
-    const result = checkTask(TASK, SHORT, held, [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }]);
+    const result = checkTask(TASK, SHORT, held, [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }], EMPTY_CHAIN);
 
     expect(result.failures).toContain('Захват остался закрытым в конце программы, а должен быть открыт.');
   });
 
   it('собирает все провалы, а не только первый', () => {
-    const result = checkTask(TASK, SHORT, graspObject(world(), 'cube-1', ZERO), []);
+    const result = checkTask(TASK, SHORT, graspObject(world(), 'cube-1', ZERO), [], EMPTY_CHAIN);
     expect(result.failures.length).toBeGreaterThan(1);
   });
 
   it('сообщает о пропавшей со сцены детали', () => {
     const empty = createWorld({ joints: [], zones: [...TASK.world.zones] });
-    expect(checkTask(TASK, SHORT, empty, []).failures[0]).toBe('На сцене нет детали «cube-1».');
+    expect(checkTask(TASK, SHORT, empty, [], EMPTY_CHAIN).failures[0]).toBe('На сцене нет детали «cube-1».');
   });
 });
 
@@ -104,7 +106,7 @@ describe('ограничение на размер программы', () => {
   };
 
   it('ловит слишком длинную программу', () => {
-    const result = checkTask(TASK, long, solved(), []);
+    const result = checkTask(TASK, long, solved(), [], EMPTY_CHAIN);
     expect(result.failures).toContain('В программе 7 инструкций, а разрешено не больше 6.');
   });
 
@@ -115,7 +117,7 @@ describe('ограничение на размер программы', () => {
       body: [{ op: 'repeat', times: 100, body: [{ op: 'comment', text: 'виток' }] }],
     };
 
-    expect(checkTask(TASK, loop, solved(), []).passed).toBe(true);
+    expect(checkTask(TASK, loop, solved(), [], EMPTY_CHAIN).passed).toBe(true);
   });
 
   it('считает вложенные ветви', () => {
@@ -134,7 +136,7 @@ describe('ограничение на размер программы', () => {
     };
 
     // 1 условие + 4 внутри + 2 снаружи = 7.
-    expect(checkTask(TASK, branchy, solved(), []).failures).toContain(
+    expect(checkTask(TASK, branchy, solved(), [], EMPTY_CHAIN).failures).toContain(
       'В программе 7 инструкций, а разрешено не больше 6.',
     );
   });
@@ -154,23 +156,23 @@ describe('цель «пройти точки»', () => {
     points.map((point, index) => ({ kind: 'moved', tick: index, point }) as const);
 
   it('засчитывает, когда фланец побывал у каждой точки', () => {
-    const result = checkTask(ROUTE, SHORT, world(), visit(FIRST, SECOND));
+    const result = checkTask(ROUTE, SHORT, world(), visit(FIRST, SECOND), EMPTY_CHAIN);
 
     expect(result.passed).toBe(true);
     expect(result.failures).toEqual([]);
   });
 
   it('порядок обхода не важен', () => {
-    expect(checkTask(ROUTE, SHORT, world(), visit(SECOND, FIRST)).passed).toBe(true);
+    expect(checkTask(ROUTE, SHORT, world(), visit(SECOND, FIRST), EMPTY_CHAIN).passed).toBe(true);
   });
 
   it('промах в пределах допуска — это попадание', () => {
     const almost = { ...FIRST, z: FIRST.z + 0.009 };
-    expect(checkTask(ROUTE, SHORT, world(), visit(almost, SECOND)).passed).toBe(true);
+    expect(checkTask(ROUTE, SHORT, world(), visit(almost, SECOND), EMPTY_CHAIN).passed).toBe(true);
   });
 
   it('пропущенная точка названа номером и координатами в миллиметрах', () => {
-    const result = checkTask(ROUTE, SHORT, world(), visit(FIRST));
+    const result = checkTask(ROUTE, SHORT, world(), visit(FIRST), EMPTY_CHAIN);
 
     expect(result.passed).toBe(false);
     expect(result.failures[0]).toBe('Робот не побывал в точке 2: X 350, Y −200, Z 220 мм.');
@@ -178,7 +180,7 @@ describe('цель «пройти точки»', () => {
 
   it('мимо допуска — мимо точки', () => {
     const far = { ...SECOND, y: SECOND.y + 0.02 };
-    expect(checkTask(ROUTE, SHORT, world(), visit(FIRST, far)).passed).toBe(false);
+    expect(checkTask(ROUTE, SHORT, world(), visit(FIRST, far), EMPTY_CHAIN).passed).toBe(false);
   });
 });
 
@@ -224,17 +226,17 @@ describe('цель «поза суставов»', () => {
     createWorld({ joints: [...joints], zones: [...POSE.world.zones] });
 
   it('засчитывает точное попадание', () => {
-    expect(checkTask(POSE, SHORT, standing(TARGET), []).passed).toBe(true);
+    expect(checkTask(POSE, SHORT, standing(TARGET), [], EMPTY_CHAIN).passed).toBe(true);
   });
 
   it('промах внутри допуска — это попадание', () => {
     const close = TARGET.map((value, index) => (index === 1 ? value + 0.04 : value));
-    expect(checkTask(POSE, SHORT, standing(close), []).passed).toBe(true);
+    expect(checkTask(POSE, SHORT, standing(close), [], EMPTY_CHAIN).passed).toBe(true);
   });
 
   it('называет сустав, который дальше всех от цели', () => {
     const off = TARGET.map((value, index) => (index === 2 ? value + 0.35 : value));
-    const result = checkTask(POSE, SHORT, standing(off), []);
+    const result = checkTask(POSE, SHORT, standing(off), [], EMPTY_CHAIN);
 
     expect(result.passed).toBe(false);
     expect(result.failures[0]).toBe('Сустав 3 не на месте: нужно 90°, сейчас 110° — разница 20°.');
@@ -242,6 +244,47 @@ describe('цель «поза суставов»', () => {
 
   it('полный оборот — та же поза', () => {
     const wrapped = TARGET.map((value, index) => (index === 0 ? value + Math.PI * 2 : value));
-    expect(checkTask(POSE, SHORT, standing(wrapped), []).passed).toBe(true);
+    expect(checkTask(POSE, SHORT, standing(wrapped), [], EMPTY_CHAIN).passed).toBe(true);
+  });
+});
+
+describe('цель «фланец в точке»', () => {
+  // Цепь из одного звена: фланец сидит в метре по X от основания и
+  // поворачивается первым суставом. Настоящая модель для проверки правила не
+  // нужна — она проверяется в tests/sim на задании урока.
+  const CHAIN: KinematicChain = {
+    joints: [
+      {
+        name: 'joint_1',
+        limit: { name: 'joint_1', type: 'revolute', lower: -Math.PI, upper: Math.PI },
+        maxSpeed: 1,
+        origin: IDENTITY,
+        axis: { x: 0, y: 0, z: 1 },
+      },
+    ],
+    baseOrigin: IDENTITY,
+    toolOrigin: fromTranslation({ x: 1, y: 0, z: 0 }),
+  };
+
+  const AT_ZERO = { x: 1, y: 0, z: 0 };
+
+  const POINT: Task = parseTask({
+    ...RAW_TASK,
+    goals: [{ type: 'flangeAtPoint', point: AT_ZERO, tolerance: 0.04 }],
+    constraints: [],
+  });
+
+  const standing = (joints: readonly number[]) =>
+    createWorld({ joints: [...joints], zones: [...POINT.world.zones] });
+
+  it('засчитывает фланец в точке', () => {
+    expect(checkTask(POINT, SHORT, standing([0]), [], CHAIN).passed).toBe(true);
+  });
+
+  it('называет расстояние до точки в миллиметрах', () => {
+    const result = checkTask(POINT, SHORT, standing([Math.PI / 2]), [], CHAIN);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures[0]).toBe('Инструмент в 1414 мм от точки: X 1000, Y 0, Z 0 мм.');
   });
 });

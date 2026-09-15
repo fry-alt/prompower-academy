@@ -67,7 +67,7 @@ describe('задание «забери деталь с конвейера»', (
 
   it('и проходит автопроверку', () => {
     const result = run(demo);
-    const check = checkTask(task, demo, result.world, result.log);
+    const check = checkTask(task, demo, result.world, result.log, chain);
 
     expect(check.failures).toEqual([]);
     expect(check.passed).toBe(true);
@@ -97,7 +97,7 @@ describe('задание «забери деталь с конвейера»', (
     };
 
     const result = run(rushing);
-    const check = checkTask(task, rushing, result.world, result.log);
+    const check = checkTask(task, rushing, result.world, result.log, chain);
 
     expect(check.passed).toBe(false);
     expect(result.log.some((event) => event.kind === 'graspMissed')).toBe(true);

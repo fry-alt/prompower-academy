@@ -184,8 +184,8 @@ export function useProgramRun(
   }, [run.world, joints, planner]);
 
   const check = useMemo(
-    () => (run.status === 'running' ? null : checkTask(task, program, run.world, run.log)),
-    [run.status, run.world, run.log, task, program],
+    () => (run.status === 'running' ? null : checkTask(task, program, run.world, run.log, chain)),
+    [run.status, run.world, run.log, task, program, chain],
   );
 
   /**

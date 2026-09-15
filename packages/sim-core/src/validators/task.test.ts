@@ -58,3 +58,23 @@ describe('цель «поза суставов»', () => {
     );
   });
 });
+
+describe('цель «фланец в точке»', () => {
+  const goal = { type: 'flangeAtPoint', point: { x: 0.43, y: 0.1, z: 0.4 }, tolerance: 0.04 };
+
+  it('разбирается', () => {
+    expect(parseTask({ ...MINIMAL, goals: [goal] }).goals[0]).toEqual(goal);
+  });
+
+  it('точка обязана быть точкой', () => {
+    expect(() => parseTask({ ...MINIMAL, goals: [{ ...goal, point: { x: 0.4, y: 0.1 } }] })).toThrow(
+      /task\.goals\[0\]\.point\.z/,
+    );
+  });
+
+  it('допуск обязателен', () => {
+    expect(() =>
+      parseTask({ ...MINIMAL, goals: [{ type: 'flangeAtPoint', point: goal.point }] }),
+    ).toThrow(/task\.goals\[0\]\.tolerance/);
+  });
+});

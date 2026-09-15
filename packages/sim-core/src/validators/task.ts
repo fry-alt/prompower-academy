@@ -29,6 +29,20 @@ export type Goal =
       readonly joints: readonly number[];
       /** Допуск по каждому суставу, радианы. */
       readonly tolerance: number;
+    }
+  /**
+   * Фланец сейчас в заданной точке.
+   *
+   * Не то же, что `pointsVisited`: та читает журнал прогона («робот там
+   * побывал»), эта смотрит на текущее состояние («робот там стоит»). В ручном
+   * уроке журнала не существует вовсе.
+   */
+  | {
+      readonly type: 'flangeAtPoint';
+      /** Точка в координатах URDF, метры. */
+      readonly point: Vec3;
+      /** Допуск по расстоянию, метры. */
+      readonly tolerance: number;
     };
 
 export type Constraint = { readonly type: 'maxStatements'; readonly value: number };
@@ -245,6 +259,13 @@ function parseGoal(input: unknown, path: string): Goal {
 
       return { type, joints, tolerance: parseTolerance(record['tolerance'], `${path}.tolerance`) };
     }
+
+    case 'flangeAtPoint':
+      return {
+        type,
+        point: parseVec3(record['point'], `${path}.point`),
+        tolerance: parseTolerance(record['tolerance'], `${path}.tolerance`),
+      };
 
     default:
       throw new TaskParseError(path, `неизвестная цель «${type}»`);

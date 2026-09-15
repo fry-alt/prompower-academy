@@ -52,7 +52,7 @@ describe('задание «пройти три точки»', () => {
 
   it('и проходит автопроверку', () => {
     const result = run(demo);
-    const check = checkTask(task, demo, result.world, result.log);
+    const check = checkTask(task, demo, result.world, result.log, chain);
 
     expect(check.failures).toEqual([]);
     expect(check.passed).toBe(true);
@@ -62,7 +62,7 @@ describe('задание «пройти три точки»', () => {
     const short: Program = { version: 1, body: demo.body.slice(0, -1) };
 
     const result = run(short);
-    const check = checkTask(task, short, result.world, result.log);
+    const check = checkTask(task, short, result.world, result.log, chain);
 
     expect(check.passed).toBe(false);
     expect(check.failures[0]).toMatch(/не побывал в точке 3/);

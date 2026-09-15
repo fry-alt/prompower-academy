@@ -60,7 +60,7 @@ describe('задание «переложи деталь из A в B»', () => {
 
   it('и проходит автопроверку', () => {
     const result = run(demo);
-    const check = checkTask(task, demo, result.world, result.log);
+    const check = checkTask(task, demo, result.world, result.log, chain);
 
     expect(check.failures).toEqual([]);
     expect(check.passed).toBe(true);
@@ -83,7 +83,7 @@ describe('задание «переложи деталь из A в B»', () => {
     };
 
     const result = run(withoutGrip);
-    const check = checkTask(task, withoutGrip, result.world, result.log);
+    const check = checkTask(task, withoutGrip, result.world, result.log, chain);
 
     expect(check.passed).toBe(false);
     // Деталь никуда не уехала, поэтому проверка называет зону, в которой она
@@ -100,7 +100,7 @@ describe('задание «переложи деталь из A в B»', () => {
     };
 
     const result = run(holdsOn);
-    const check = checkTask(task, holdsOn, result.world, result.log);
+    const check = checkTask(task, holdsOn, result.world, result.log, chain);
 
     expect(check.passed).toBe(false);
     expect(check.failures.join(' ')).toMatch(/Захват остался закрытым/);
@@ -148,7 +148,7 @@ describe('задание «переложи деталь из A в B»', () => {
 
   it('эталонная программа укладывается в ограничение задания', () => {
     const result = run(demo);
-    expect(checkTask(task, demo, result.world, result.log).failures).not.toContain(
+    expect(checkTask(task, demo, result.world, result.log, chain).failures).not.toContain(
       expect.stringContaining('инструкций'),
     );
   });

@@ -1,5 +1,6 @@
 import type { Program, Statement } from '../program/ast';
 import type { EventLog, Vec3, WorldState } from '../world/state';
+import { flangePose, type KinematicChain } from '../kinematics/chain';
 import { normalizeAngle } from '../kinematics/joint-limits';
 import { zoneContaining } from '../world/aabb';
 import type { Constraint, Goal, Hint, Task } from './task';
@@ -27,9 +28,10 @@ export function checkTask(
   program: Program,
   world: WorldState,
   log: EventLog,
+  chain: KinematicChain,
 ): CheckResult {
   const failures = [
-    ...task.goals.map((goal) => checkGoal(goal, world, log)),
+    ...task.goals.map((goal) => checkGoal(goal, world, log, chain)),
     ...task.constraints.map((constraint) => checkConstraint(constraint, program)),
   ].filter((failure): failure is string => failure !== null);
 
@@ -37,7 +39,12 @@ export function checkTask(
 }
 
 /** Возвращает текст провала или `null`, если цель достигнута. */
-function checkGoal(goal: Goal, world: WorldState, log: EventLog): string | null {
+function checkGoal(
+  goal: Goal,
+  world: WorldState,
+  log: EventLog,
+  chain: KinematicChain,
+): string | null {
   switch (goal.type) {
     case 'objectInZone':
       return checkObjectInZone(goal, world, log);
@@ -47,7 +54,31 @@ function checkGoal(goal: Goal, world: WorldState, log: EventLog): string | null 
       return checkPointsVisited(goal, log);
     case 'jointsAtPose':
       return checkJointsAtPose(goal, world);
+    case 'flangeAtPoint':
+      return checkFlangeAtPoint(goal, world, chain);
   }
+}
+
+/**
+ * Где фланец стоит сейчас — против точки задания.
+ *
+ * Прямая кинематика считается здесь, а не берётся из состояния мира: поза
+ * фланца выводится из углов, и хранить её рядом с ними значило бы завести
+ * второй источник правды об одном и том же.
+ */
+function checkFlangeAtPoint(
+  goal: Goal & { type: 'flangeAtPoint' },
+  world: WorldState,
+  chain: KinematicChain,
+): string | null {
+  const actual = flangePose(chain, world.joints);
+  const gap = distance(actual, goal.point);
+  if (gap <= goal.tolerance) return null;
+
+  return (
+    `Инструмент в ${millimetres(gap)} мм от точки: ` +
+    `X ${millimetres(goal.point.x)}, Y ${millimetres(goal.point.y)}, Z ${millimetres(goal.point.z)} мм.`
+  );
 }
 
 /**
