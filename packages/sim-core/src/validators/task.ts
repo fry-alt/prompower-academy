@@ -42,8 +42,12 @@ export interface TaskWorld {
   readonly joints?: readonly number[];
 }
 
+/** Чем ученик решает задание: программой из блоков или ползунками суставов. */
+export type TaskMode = 'program' | 'jog';
+
 export interface Task {
   readonly id: string;
+  readonly mode: TaskMode;
   readonly world: TaskWorld;
   readonly goals: readonly Goal[];
   readonly constraints: readonly Constraint[];
@@ -68,20 +72,42 @@ export class TaskParseError extends Error {
  */
 export function parseTask(input: unknown): Task {
   const root = asRecord(input, 'task');
+  const mode = parseMode(root['mode']);
+
+  const constraints = optionalArray(root['constraints'], 'task.constraints').map((item, index) =>
+    parseConstraint(item, `task.constraints[${index}]`),
+  );
+
+  // Ручное задание решается руками: инструкций нет, и ограничивать в нём нечего.
+  // Молча пропустить такое ограничение значит показать ученику требование,
+  // которое никогда не проверяется.
+  if (mode === 'jog' && constraints.length > 0) {
+    throw new TaskParseError(
+      'task.constraints',
+      'в ручном задании нет программы: ограничивать нечего',
+    );
+  }
 
   return {
     id: asNonEmptyString(root['id'], 'task.id'),
+    mode,
     world: parseWorld(root['world'], 'task.world'),
     goals: asArray(root['goals'], 'task.goals').map((goal, index) =>
       parseGoal(goal, `task.goals[${index}]`),
     ),
-    constraints: optionalArray(root['constraints'], 'task.constraints').map((item, index) =>
-      parseConstraint(item, `task.constraints[${index}]`),
-    ),
+    constraints,
     hints: optionalArray(root['hints'], 'task.hints').map((item, index) =>
       parseHint(item, `task.hints[${index}]`),
     ),
   };
+}
+
+/** Режим не указан — задание программное: так написаны все уроки до первого. */
+function parseMode(input: unknown): TaskMode {
+  if (input === undefined) return 'program';
+  if (input === 'program' || input === 'jog') return input;
+
+  throw new TaskParseError('task.mode', `ожидалось program или jog, получено «${String(input)}»`);
 }
 
 function parseWorld(input: unknown, path: string): TaskWorld {
