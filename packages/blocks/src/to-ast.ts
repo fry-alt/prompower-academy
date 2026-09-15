@@ -1,4 +1,12 @@
-import type { Condition, IoBank, Program, Statement } from '@prompower/sim-core';
+import type {
+  BinaryOperator,
+  Condition,
+  Expression,
+  IoBank,
+  Program,
+  Statement,
+  Value,
+} from '@prompower/sim-core';
 import { BLOCK_TYPES, MOVE_JOINT_FIELDS } from './blocks';
 
 /**
@@ -127,6 +135,29 @@ function translate(block: BlockLike, context: Context): Statement | null {
         then: sequence(block.getInputTargetBlock('THEN'), context),
       };
 
+    case BLOCK_TYPES.setVar:
+      return {
+        op: 'setVar',
+        name: variableName(block),
+        value: expression(block.getInputTargetBlock('VALUE'), block, 'значение'),
+      };
+
+    case BLOCK_TYPES.moveComputed:
+      return {
+        op: 'moveL',
+        pose: {
+          x: coordinate(block, 'X'),
+          y: coordinate(block, 'Y'),
+          z: coordinate(block, 'Z'),
+          // Инструмент вниз: ориентация у этого блока не набирается.
+          rx: Math.PI,
+          ry: 0,
+          rz: 0,
+        },
+        speed: context.speed,
+        acc: DEFAULT_ACC,
+      };
+
     case BLOCK_TYPES.comment:
       return { op: 'comment', text: String(block.getFieldValue('TEXT') ?? '') };
 
@@ -162,6 +193,61 @@ function condition(block: BlockLike | null): Condition {
   }
 
   throw new BlockTranslationError(block.type, 'этот блок нельзя использовать как условие');
+}
+
+/**
+ * Выражение из разъёма.
+ *
+ * Пустой разъём здесь — ошибка, в отличие от пустого условия. У условия есть
+ * естественное нейтральное значение — «не сработало», и наполовину собранную
+ * программу с ним можно запустить. У координаты такого значения нет: ноль — это
+ * настоящее место, и робот молча поехал бы в него.
+ */
+function expression(block: BlockLike | null, owner: BlockLike, what: string): Expression {
+  if (block === null) {
+    throw new BlockTranslationError(owner.type, `не задано ${what}`);
+  }
+
+  switch (block.type) {
+    case BLOCK_TYPES.number:
+      return { kind: 'number', value: number(block, 'VALUE') };
+
+    case BLOCK_TYPES.variable:
+      return { kind: 'variable', name: variableName(block) };
+
+    case BLOCK_TYPES.math:
+      return {
+        kind: 'binary',
+        operator: operator(block),
+        left: expression(block.getInputTargetBlock('LEFT'), block, 'левое число'),
+        right: expression(block.getInputTargetBlock('RIGHT'), block, 'правое число'),
+      };
+
+    default:
+      throw new BlockTranslationError(block.type, 'этот блок не даёт значения');
+  }
+}
+
+/** Координата из разъёма: ученик пишет миллиметры, ядро хранит метры. */
+function coordinate(block: BlockLike, input: string): Value {
+  return {
+    kind: 'binary',
+    operator: '/',
+    left: expression(block.getInputTargetBlock(input), block, `координата ${input}`),
+    right: { kind: 'number', value: MM },
+  };
+}
+
+function variableName(block: BlockLike): string {
+  const name = String(block.getFieldValue('NAME') ?? '').trim();
+  if (name === '') throw new BlockTranslationError(block.type, 'у переменной нет имени');
+  return name;
+}
+
+function operator(block: BlockLike): BinaryOperator {
+  const value = String(block.getFieldValue('OP') ?? '+');
+  if (value === '+' || value === '-' || value === '*' || value === '/') return value;
+  throw new BlockTranslationError(block.type, `неизвестное действие «${value}»`);
 }
 
 function number(block: BlockLike, field: string): number {

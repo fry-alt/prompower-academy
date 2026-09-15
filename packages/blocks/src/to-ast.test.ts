@@ -199,3 +199,80 @@ describe('крайние случаи', () => {
     expect(() => toAst(block('чужой_блок'))).toThrow(/чужой_блок/);
   });
 });
+
+describe('переменные и вычисляемое движение', () => {
+  it('собирает присваивание с арифметикой', () => {
+    const program = toAst(
+      block(
+        BLOCK_TYPES.setVar,
+        { NAME: 'y' },
+        {
+          VALUE: block(
+            BLOCK_TYPES.math,
+            { OP: '+' },
+            {
+              LEFT: block(BLOCK_TYPES.number, { VALUE: -100 }),
+              RIGHT: block(
+                BLOCK_TYPES.math,
+                { OP: '*' },
+                {
+                  LEFT: block(BLOCK_TYPES.variable, { NAME: 'i' }),
+                  RIGHT: block(BLOCK_TYPES.number, { VALUE: 100 }),
+                },
+              ),
+            },
+          ),
+        },
+      ),
+    );
+
+    expect(program.body[0]).toEqual({
+      op: 'setVar',
+      name: 'y',
+      value: {
+        kind: 'binary',
+        operator: '+',
+        left: { kind: 'number', value: -100 },
+        right: {
+          kind: 'binary',
+          operator: '*',
+          left: { kind: 'variable', name: 'i' },
+          right: { kind: 'number', value: 100 },
+        },
+      },
+    });
+  });
+
+  it('координата вычисляемого движения переводится в метры делением', () => {
+    const program = toAst(
+      block(
+        BLOCK_TYPES.moveComputed,
+        {},
+        {
+          X: block(BLOCK_TYPES.number, { VALUE: 450 }),
+          Y: block(BLOCK_TYPES.variable, { NAME: 'y' }),
+          Z: block(BLOCK_TYPES.number, { VALUE: 220 }),
+        },
+      ),
+    );
+
+    const statement = program.body[0]!;
+    expect(statement.op).toBe('moveL');
+    if (statement.op !== 'moveL') return;
+
+    expect(statement.pose.y).toEqual({
+      kind: 'binary',
+      operator: '/',
+      left: { kind: 'variable', name: 'y' },
+      right: { kind: 'number', value: 1000 },
+    });
+    // Инструмент вниз: ориентация у этого блока не набирается.
+    expect(statement.pose.rx).toBeCloseTo(Math.PI, 9);
+  });
+
+  it('пустой разъём координаты — ошибка, а не молчаливый ноль', () => {
+    expect(() =>
+      toAst(block(BLOCK_TYPES.moveComputed, {}, { X: block(BLOCK_TYPES.number, { VALUE: 450 }) })),
+    ).toThrow(/координата Y/);
+  });
+});
