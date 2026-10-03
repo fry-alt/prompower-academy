@@ -536,3 +536,86 @@ describe('движение по вычисленной координате', ()
     expect(seen[0]!.x).toBeCloseTo(0.35, 9);
   });
 });
+
+describe('устойчивость к ошибкам программы', () => {
+  it('несуществующий выход — провал с объяснением, а не исключение', () => {
+    const result = run(program({ op: 'setDO', bank: 'cabinet', index: 99, value: true }));
+
+    expect(result.status).toBe('failed');
+    expect(result.error).toMatch(/выхода 99 у шкафа управления нет/);
+  });
+
+  it('переменная с именем из прототипа объекта равна нулю, а не функции', () => {
+    const result = run(
+      program({
+        op: 'setVar',
+        name: 'y',
+        value: {
+          kind: 'binary',
+          operator: '+',
+          left: { kind: 'variable', name: 'toString' },
+          right: { kind: 'number', value: 1 },
+        },
+      }),
+    );
+
+    expect(result.status).toBe('finished');
+    expect(result.world.variables['y']).toBe(1);
+  });
+
+  it('исключение внутри планировщика превращается в провал прогона', () => {
+    const broken: MotionPlanner = {
+      ...jumpPlanner,
+      planJoint: () => {
+        throw new Error('сломалось');
+      },
+    };
+
+    const result = run(program(overCube), world(), broken);
+
+    expect(result.status).toBe('failed');
+    expect(result.error).toMatch(/внутренней ошибки симулятора: сломалось/);
+  });
+
+  it('бесконечное ожидание сигнала называет сигнал, а не цикл', () => {
+    const result = runToCompletion(
+      createRun(program({ op: 'waitDI', bank: 'cabinet', index: 1, value: true }), world()),
+      jumpPlanner,
+      { maxSteps: 50 },
+    );
+
+    expect(result.status).toBe('failed');
+    expect(result.error).toMatch(/Сигнал на входе так и не появился/);
+  });
+});
+
+describe('отпущенная деталь', () => {
+  // Пустышка-планировщик держит схват на высоте стола, поэтому деталь над ним
+  // берём с запасом досягаемости: проверяется отпускание, а не захват.
+  const reach = { graspReach: 0.1 };
+  const to = (x: number): Statement => ({ op: 'moveJ', joints: [x, 0, 0, 0, 0, 0], speed: 1, acc: 1 });
+  const carry = program(to(0.3), { op: 'gripper', action: 'close' }, to(0.5), {
+    op: 'gripper',
+    action: 'open',
+  });
+
+  it('опускается на стол, а не висит в воздухе', () => {
+    const floating: SceneObject = { ...cube, position: { x: 0.3, y: 0.02, z: 0.08 } };
+    const initial = createWorld({ joints: [0, 0, 0, 0, 0, 0], objects: [floating] });
+
+    const result = runToCompletion(createRun(carry, initial), jumpPlanner, reach);
+
+    expect(result.status).toBe('finished');
+    expect(result.world.objects['cube-1']?.position.z).toBeCloseTo(0.02, 9);
+  });
+
+  it('встаёт на деталь под собой', () => {
+    const base: SceneObject = { id: 'base', position: { x: 0.5, y: 0.02, z: 0.02 }, size: cube.size };
+    const top: SceneObject = { ...cube, position: { x: 0.3, y: 0.02, z: 0.08 } };
+    const initial = createWorld({ joints: [0, 0, 0, 0, 0, 0], objects: [base, top] });
+
+    const result = runToCompletion(createRun(carry, initial), jumpPlanner, reach);
+
+    expect(result.world.objects['cube-1']?.position.z).toBeCloseTo(0.06, 9);
+  });
+});

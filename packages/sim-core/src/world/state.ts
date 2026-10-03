@@ -291,9 +291,53 @@ export function graspObject(world: WorldState, id: string, offset: Vec3): WorldS
   return { ...world, grasped: id, graspOffset: offset, gripperOpen: false };
 }
 
-/** Отпускает то, что в захвате. Открыть пустой схват — не ошибка. */
+/**
+ * Отпускает то, что в захвате. Открыть пустой схват — не ошибка.
+ *
+ * Отпущенная деталь опускается на ближайшую опору под собой: столешницу или
+ * верх другой детали. Это не физика — ни скорости, ни отскока, ни опрокидывания
+ * (§13 брифа), — а здравый смысл: деталь, разжатая в сантиметре над ячейкой,
+ * висела бы в воздухе, на сцене это выглядит поломкой, а автопроверка честно
+ * не засчитывала бы ячейку.
+ */
 export function releaseObject(world: WorldState): WorldState {
-  return { ...world, grasped: null, graspOffset: null, gripperOpen: true };
+  const released = { ...world, grasped: null, graspOffset: null, gripperOpen: true };
+  if (world.grasped === null) return released;
+
+  const object = world.objects[world.grasped];
+  if (object === undefined) return released;
+
+  const position = { ...object.position, z: restingHeight(world, object) };
+  return { ...released, objects: { ...world.objects, [object.id]: { ...object, position } } };
+}
+
+/** Насколько выше опоры может оказаться низ детали и всё равно на неё встать, метры. */
+const SUPPORT_TOLERANCE = 0.005;
+
+/**
+ * Высота центра детали, вставшей на опору.
+ *
+ * Опора — столешница (ноль) или верх другой детали, над которым стоит центр
+ * отпущенной и который не выше её низа. Так деталь, поставленная на соседнюю,
+ * остаётся стоять на ней, а не проваливается на стол.
+ */
+function restingHeight(world: WorldState, object: SceneObject): number {
+  const half = object.size.z / 2;
+  const bottom = object.position.z - half;
+  let support = 0;
+
+  for (const other of Object.values(world.objects)) {
+    if (other.id === object.id) continue;
+
+    const withinX = Math.abs(object.position.x - other.position.x) <= other.size.x / 2;
+    const withinY = Math.abs(object.position.y - other.position.y) <= other.size.y / 2;
+    if (!withinX || !withinY) continue;
+
+    const top = other.position.z + other.size.z / 2;
+    if (top <= bottom + SUPPORT_TOLERANCE && top > support) support = top;
+  }
+
+  return support + half;
 }
 
 function byId<T extends { readonly id: string }>(items: readonly T[]): Record<string, T> {

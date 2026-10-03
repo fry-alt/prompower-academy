@@ -12,6 +12,7 @@ import { TICK_MS } from '../tick';
 import {
   advanceTick,
   digitalInput,
+  digitalOutput,
   graspObject,
   moveObject,
   releaseObject,
@@ -119,20 +120,37 @@ export function step(state: RunState, planner: MotionPlanner, options: RunOption
 
   const maxSteps = options.maxSteps ?? DEFAULT_MAX_STEPS;
   if (state.steps >= maxSteps) {
+    // Ожидание сигнала тоже крутит шаги, и «цикл без выхода» про него неправда.
+    const waiting = state.waitingSince !== null && state.current?.op === 'waitDI';
     return fail(
       state,
-      `Программа не завершилась за ${maxSteps} шагов. Похоже на цикл, из которого нет выхода.`,
+      waiting
+        ? 'Сигнал на входе так и не появился: программа ждала его слишком долго. ' +
+            'Проверьте номер входа и то, что его кто-то включает.'
+        : `Программа не завершилась за ${maxSteps} шагов. Похоже на цикл, из которого нет выхода.`,
     );
   }
 
-  const unwound = unwind(state);
-  if (unwound.status !== 'running') return unwound;
+  // Страховка: что бы ни сломалось внутри шага, наружу уходит провал прогона с
+  // объяснением, а не исключение. Иначе оно вылетело бы из кадра анимации, и
+  // экран урока застыл бы в «выполняется» без единого слова.
+  try {
+    const unwound = unwind(state);
+    if (unwound.status !== 'running') return unwound;
 
-  const statement = currentStatement(unwound);
-  if (statement === null) return finish(unwound);
+    const statement = currentStatement(unwound);
+    if (statement === null) return finish(unwound);
 
-  const executed = execute(unwound, statement, planner, options);
-  return withCurrent({ ...executed, steps: executed.steps + 1 });
+    const executed = execute(unwound, statement, planner, options);
+    return withCurrent({ ...executed, steps: executed.steps + 1 });
+  } catch (error) {
+    return fail(
+      state,
+      `Программа остановлена из-за внутренней ошибки симулятора: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
 }
 
 /** Крутит шаги до завершения либо до ошибки. Для тестов, CI и автопроверки заданий. */
@@ -178,6 +196,15 @@ function execute(
     }
 
     case 'setDO': {
+      // Номер выхода из блока ничем не ограничен сверху: несуществующий канал —
+      // ошибка программы ученика, и объяснять её надо словами, а не исключением.
+      if (digitalOutput(state.world, statement.bank, statement.index) === null) {
+        return fail(
+          state,
+          `Цифрового выхода ${statement.index} у ${ioBankLabel(statement.bank)} нет: ` +
+            `каналов всего ${state.world.io[statement.bank].outputs.length}.`,
+        );
+      }
       const world = setDigitalOutput(
         state.world,
         statement.bank,
@@ -470,7 +497,9 @@ export function evaluate(
 
     case 'variable':
       // Необъявленная переменная равна нулю: так же ведут себя контроллеры роботов.
-      return variables[expression.name] ?? 0;
+      // Проверка на собственное поле: иначе переменная «toString» нашлась бы в
+      // прототипе объекта и вернула бы функцию вместо числа.
+      return Object.hasOwn(variables, expression.name) ? (variables[expression.name] ?? 0) : 0;
 
     case 'binary': {
       const left = evaluate(expression.left, variables);

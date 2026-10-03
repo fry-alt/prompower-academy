@@ -99,10 +99,25 @@ describe('checkTask', () => {
   });
 });
 
+describe('деталь в захвате', () => {
+  it('прямо говорит, что схват не открыли', () => {
+    const held = graspObject(moveObject(world(), 'cube-1', { x: -0.3, y: 0.02, z: 0 }), 'cube-1', {
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+    const result = checkTask(TASK, SHORT, held, [{ kind: 'grasp', tick: 0, objectId: 'cube-1' }], EMPTY_CHAIN);
+
+    expect(result.failures).toContain(
+      'Деталь «cube-1» осталась в захвате: откройте схват над зоной «zone-b».',
+    );
+  });
+});
+
 describe('ограничение на размер программы', () => {
   const long: Program = {
     version: 1,
-    body: Array.from({ length: 7 }, () => ({ op: 'comment', text: 'x' }) as const),
+    body: Array.from({ length: 7 }, () => ({ op: 'wait', ms: 0 }) as const),
   };
 
   it('ловит слишком длинную программу', () => {
@@ -114,10 +129,22 @@ describe('ограничение на размер программы', () => {
     // Цикл на сто витков — это две инструкции, а не двести.
     const loop: Program = {
       version: 1,
-      body: [{ op: 'repeat', times: 100, body: [{ op: 'comment', text: 'виток' }] }],
+      body: [{ op: 'repeat', times: 100, body: [{ op: 'wait', ms: 0 }] }],
     };
 
     expect(checkTask(TASK, loop, solved(), [], EMPTY_CHAIN).passed).toBe(true);
+  });
+
+  it('комментарии не считает: подписанная программа не наказывается', () => {
+    const signed: Program = {
+      version: 1,
+      body: [
+        ...Array.from({ length: 6 }, () => ({ op: 'wait', ms: 0 }) as const),
+        ...Array.from({ length: 5 }, () => ({ op: 'comment', text: 'пояснение' }) as const),
+      ],
+    };
+
+    expect(checkTask(TASK, signed, solved(), [], EMPTY_CHAIN).passed).toBe(true);
   });
 
   it('считает вложенные ветви', () => {
@@ -127,11 +154,11 @@ describe('ограничение на размер программы', () => {
         {
           op: 'if',
           cond: { kind: 'digitalInput', bank: 'cabinet', index: 1, value: true },
-          then: [{ op: 'comment', text: '1' }, { op: 'comment', text: '2' }],
-          else: [{ op: 'comment', text: '3' }, { op: 'comment', text: '4' }],
+          then: [{ op: 'wait', ms: 0 }, { op: 'wait', ms: 0 }],
+          else: [{ op: 'wait', ms: 0 }, { op: 'wait', ms: 0 }],
         },
-        { op: 'comment', text: '5' },
-        { op: 'comment', text: '6' },
+        { op: 'wait', ms: 0 },
+        { op: 'wait', ms: 0 },
       ],
     };
 

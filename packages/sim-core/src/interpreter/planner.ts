@@ -37,10 +37,18 @@ import { planned, refused, type MotionPlanner, type MotionResult } from './motio
 export interface PlannerOptions {
   /** Скорость фланца при `speed = 1`, м/с. Настройка контроллера, не робота. */
   readonly linearSpeed?: number;
+  /**
+   * Скорость поворота инструмента при `speed = 1`, рад/с. Тоже настройка
+   * контроллера: движение по прямой с разворотом кисти длится столько, сколько
+   * дольше — путь или поворот.
+   */
+  readonly angularSpeed?: number;
   /** Насколько часто пишем промежуточные позы: по суставам, радианы. */
   readonly jointStep?: number;
   /** То же для движения по прямой: метры. */
   readonly linearStep?: number;
+  /** То же для поворота инструмента при движении по прямой: радианы. */
+  readonly angularStep?: number;
   /** Потолок числа промежуточных поз, чтобы не раздувать память на длинном пути. */
   readonly maxWaypoints?: number;
   /**
@@ -53,8 +61,10 @@ export interface PlannerOptions {
 
 interface Settings {
   readonly linearSpeed: number;
+  readonly angularSpeed: number;
   readonly jointStep: number;
   readonly linearStep: number;
+  readonly angularStep: number;
   readonly maxWaypoints: number;
   readonly minHeight: number;
   readonly ik?: IkOptions;
@@ -62,8 +72,10 @@ interface Settings {
 
 const DEFAULTS: Settings = {
   linearSpeed: 0.25,
+  angularSpeed: 1,
   jointStep: 0.005,
   linearStep: 0.005,
+  angularStep: 0.01,
   maxWaypoints: 400,
   minHeight: 0,
 };
@@ -144,10 +156,17 @@ function planLinearMotion(
 
   const startPose = flangePose(chain, from);
   const distance = Math.hypot(target.x - startPose.x, target.y - startPose.y, target.z - startPose.z);
-  const steps = sampleCount([distance], settings.linearStep, settings.maxWaypoints);
 
   const startMatrix = fromPose(startPose);
   const targetMatrix = fromPose(target);
+
+  // Поворот считается наравне с путём: разворот кисти на месте — тоже движение,
+  // и делать его одним прыжком решателя значит потерять ориентацию по дороге.
+  const turn = axisAngle(rotationTo(startMatrix, targetMatrix)).angle;
+  const steps = Math.max(
+    sampleCount([distance], settings.linearStep, settings.maxWaypoints),
+    sampleCount([turn], settings.angularStep, settings.maxWaypoints),
+  );
 
   const waypoints: number[][] = [];
   let seed = [...from];
@@ -174,7 +193,10 @@ function planLinearMotion(
   }
 
   const last = waypoints[waypoints.length - 1] ?? [...from];
-  const seconds = distance / Math.max(settings.linearSpeed * params.speed, 1e-6);
+  const seconds = Math.max(
+    distance / Math.max(settings.linearSpeed * params.speed, 1e-6),
+    turn / Math.max(settings.angularSpeed * params.speed, 1e-6),
+  );
 
   return planned({ joints: last, ticks: toTicks(seconds), waypoints });
 }
@@ -250,19 +272,49 @@ function interpolatePose(from: Matrix4, to: Matrix4, t: number): Pose {
 
 /** Поворот из `from` в `to` на долю `t`, через ось и угол относительного поворота. */
 function slerpRotation(from: Matrix4, to: Matrix4, t: number): Matrix4 {
-  const relative = rotationTo(from, to);
-  const angle = Math.acos(Math.min(1, Math.max(-1, (relative[0]! + relative[4]! + relative[8]! - 1) / 2)));
-
+  const { axis, angle } = axisAngle(rotationTo(from, to));
   if (angle < 1e-9) return from;
-
-  const sin = Math.sin(angle);
-  const axis = {
-    x: (relative[7]! - relative[5]!) / (2 * sin),
-    y: (relative[2]! - relative[6]!) / (2 * sin),
-    z: (relative[3]! - relative[1]!) / (2 * sin),
-  };
-
   return multiplyRotation(from, rodrigues(axis, angle * t));
+}
+
+/**
+ * Ось и угол поворота, записанного матрицей 3×3 построчно.
+ *
+ * Ось берётся из кососимметричной части, пока поворот не близок к 180°. Там
+ * она вырождается в ноль на ноль, и деление давало мусор вместо оси — разворот
+ * инструмента на пол-оборота превращал путь в NaN. У разворота ось достаётся
+ * из симметричной части: `R + I = 2·a·aᵀ`, любой ненулевой столбец ей
+ * сонаправлен, а самый длинный — самый устойчивый.
+ */
+function axisAngle(r: readonly number[]): { axis: { x: number; y: number; z: number }; angle: number } {
+  const w = {
+    x: (r[7]! - r[5]!) / 2,
+    y: (r[2]! - r[6]!) / 2,
+    z: (r[3]! - r[1]!) / 2,
+  };
+  const sin = Math.hypot(w.x, w.y, w.z);
+  const cos = (r[0]! + r[4]! + r[8]! - 1) / 2;
+  const angle = Math.atan2(sin, cos);
+
+  if (sin > 1e-6) {
+    return { axis: { x: w.x / sin, y: w.y / sin, z: w.z / sin }, angle };
+  }
+  if (cos > 0) return { axis: { x: 0, y: 0, z: 1 }, angle: 0 };
+
+  const diagonal = [r[0]! + 1, r[4]! + 1, r[8]! + 1];
+  let column = 0;
+  if (diagonal[1]! > diagonal[column]!) column = 1;
+  if (diagonal[2]! > diagonal[column]!) column = 2;
+
+  const axis = {
+    x: r[column]! + (column === 0 ? 1 : 0),
+    y: r[3 + column]! + (column === 1 ? 1 : 0),
+    z: r[6 + column]! + (column === 2 ? 1 : 0),
+  };
+  const length = Math.hypot(axis.x, axis.y, axis.z);
+  if (length < 1e-9) return { axis: { x: 0, y: 0, z: 1 }, angle: 0 };
+
+  return { axis: { x: axis.x / length, y: axis.y / length, z: axis.z / length }, angle };
 }
 
 function rotationTo(from: Matrix4, to: Matrix4): number[] {

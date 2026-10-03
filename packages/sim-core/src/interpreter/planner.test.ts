@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { flangePose } from '../kinematics/chain';
+import { flangePose, forwardKinematics } from '../kinematics/chain';
+import { fromPose } from '../kinematics/transform';
 import { parseUrdfChain } from '../kinematics/urdf';
 import { createPlanner } from './planner';
 import { TICK_MS } from '../tick';
@@ -247,6 +248,46 @@ describe('planLinear', () => {
   it('детерминирован', () => {
     const target = flangePose(chain, [0.1, 1.0, -1.5, 0.1, 0.6, 0]);
     expect(planner.planLinear(HOME, target, FULL)).toEqual(planner.planLinear(HOME, target, FULL));
+  });
+
+  it('разворачивает инструмент на 180° на месте, не теряя чисел', () => {
+    // Ось шестого сустава — ось инструмента: пол-оборота им дают ту же точку с
+    // развёрнутой ориентацией. Ось такого поворота из кососимметричной части не
+    // достать — там ноль на ноль, и раньше путь превращался в NaN.
+    const flipped = [...HOME.slice(0, 5), (HOME[5] ?? 0) + Math.PI];
+    const target = flangePose(chain, flipped);
+
+    const result = planner.planLinear(HOME, target, FULL);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const point of result.plan.waypoints) {
+      for (const value of point) expect(Number.isFinite(value)).toBe(true);
+    }
+
+    const reached = flangePose(chain, result.plan.joints);
+    expect(Math.hypot(reached.x - target.x, reached.y - target.y, reached.z - target.z)).toBeLessThan(
+      0.001,
+    );
+
+    // И ориентация та, что просили, а не случайная.
+    const actual = forwardKinematics(chain, result.plan.joints);
+    const wanted = fromPose(target);
+    for (const index of [0, 1, 2, 4, 5, 6, 8, 9, 10]) {
+      expect(actual[index]!).toBeCloseTo(wanted[index]!, 2);
+    }
+  });
+
+  it('поворот на месте идёт по шагам и занимает время', () => {
+    // Положение не меняется, а поворот большой: раньше путь из одной точки и
+    // один тик — разворот кисти «мгновенно» и одним прыжком решателя.
+    const turned = [...HOME.slice(0, 5), (HOME[5] ?? 0) + 1.2];
+    const result = planner.planLinear(HOME, flangePose(chain, turned), FULL);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.waypoints.length).toBeGreaterThan(10);
+    expect(result.plan.ticks).toBeGreaterThan(10);
   });
 
   it('не раздувает траекторию сверх потолка точек', () => {

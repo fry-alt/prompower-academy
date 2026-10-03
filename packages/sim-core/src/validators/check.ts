@@ -258,6 +258,12 @@ function checkObjectInZone(
   const target = world.zones[goal.zone];
   if (target === undefined) return `На сцене нет зоны «${goal.zone}».`;
 
+  // Деталь, оставшаяся в схвате, ни в какой зоне не лежит, даже если висит над
+  // нужной: это самая частая ошибка, и назвать её надо прямо.
+  if (world.grasped === goal.object) {
+    return `Деталь «${goal.object}» осталась в захвате: откройте схват над зоной «${goal.zone}».`;
+  }
+
   const actual = zoneContaining(world.zones, object);
   if (actual === goal.zone) return null;
 
@@ -294,6 +300,9 @@ function checkGripperState(
  * Иначе цикл на десять витков выглядел бы как десять инструкций, и требование
  * «уложись в 12 блоков» наказывало бы ровно за то, чему урок учит.
  *
+ * Комментарии не считаются: это пояснение для человека, а не команда роботу,
+ * и наказывать за подписанную программу значит учить её не подписывать.
+ *
  * Запреты движения сюда не попадают: их проверяет `checkKeepOuts`, и программа
  * им не нужна.
  */
@@ -310,6 +319,7 @@ function countStatements(body: readonly Statement[]): number {
   let count = 0;
 
   for (const statement of body) {
+    if (statement.op === 'comment') continue;
     count += 1;
     if (statement.op === 'repeat' || statement.op === 'while') {
       count += countStatements(statement.body);
