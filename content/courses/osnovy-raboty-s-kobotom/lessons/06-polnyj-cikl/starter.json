@@ -11,35 +11,35 @@
           "block": {
             "type": "pp_comment",
             "fields": {
-              "TEXT": "Деталь 1: взять и положить в ячейку 1"
+              "TEXT": "Встать над линией деталей"
             },
             "next": {
               "block": {
-                "type": "pp_move_linear",
+                "type": "pp_move_joint",
                 "fields": {
-                  "X": 450,
-                  "Y": -100,
-                  "Z": 220,
-                  "RX": 180,
-                  "RY": 0,
-                  "RZ": 0
+                  "J1": -14.8,
+                  "J2": 80.9,
+                  "J3": -110.3,
+                  "J4": 119.3,
+                  "J5": 90,
+                  "J6": -104.8
                 },
                 "next": {
                   "block": {
-                    "type": "pp_move_linear",
+                    "type": "pp_comment",
                     "fields": {
-                      "X": 450,
-                      "Y": -100,
-                      "Z": 60,
-                      "RX": 180,
-                      "RY": 0,
-                      "RZ": 0
+                      "TEXT": "Деталь 1: взять и положить в ячейку 1"
                     },
                     "next": {
                       "block": {
-                        "type": "pp_gripper",
+                        "type": "pp_move_linear",
                         "fields": {
-                          "ACTION": "close"
+                          "X": 450,
+                          "Y": -100,
+                          "Z": 220,
+                          "RX": 180,
+                          "RY": 0,
+                          "RZ": 0
                         },
                         "next": {
                           "block": {
@@ -47,38 +47,38 @@
                             "fields": {
                               "X": 450,
                               "Y": -100,
-                              "Z": 220,
+                              "Z": 60,
                               "RX": 180,
                               "RY": 0,
                               "RZ": 0
                             },
                             "next": {
                               "block": {
-                                "type": "pp_move_linear",
+                                "type": "pp_gripper",
                                 "fields": {
-                                  "X": 250,
-                                  "Y": -100,
-                                  "Z": 220,
-                                  "RX": 180,
-                                  "RY": 0,
-                                  "RZ": 0
+                                  "ACTION": "close"
                                 },
                                 "next": {
                                   "block": {
                                     "type": "pp_move_linear",
                                     "fields": {
-                                      "X": 250,
+                                      "X": 450,
                                       "Y": -100,
-                                      "Z": 60,
+                                      "Z": 220,
                                       "RX": 180,
                                       "RY": 0,
                                       "RZ": 0
                                     },
                                     "next": {
                                       "block": {
-                                        "type": "pp_gripper",
+                                        "type": "pp_move_linear",
                                         "fields": {
-                                          "ACTION": "open"
+                                          "X": 250,
+                                          "Y": -100,
+                                          "Z": 220,
+                                          "RX": 180,
+                                          "RY": 0,
+                                          "RZ": 0
                                         },
                                         "next": {
                                           "block": {
@@ -86,10 +86,31 @@
                                             "fields": {
                                               "X": 250,
                                               "Y": -100,
-                                              "Z": 220,
+                                              "Z": 60,
                                               "RX": 180,
                                               "RY": 0,
                                               "RZ": 0
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "pp_gripper",
+                                                "fields": {
+                                                  "ACTION": "open"
+                                                },
+                                                "next": {
+                                                  "block": {
+                                                    "type": "pp_move_linear",
+                                                    "fields": {
+                                                      "X": 250,
+                                                      "Y": -100,
+                                                      "Z": 220,
+                                                      "RX": 180,
+                                                      "RY": 0,
+                                                      "RZ": 0
+                                                    }
+                                                  }
+                                                }
+                                              }
                                             }
                                           }
                                         }

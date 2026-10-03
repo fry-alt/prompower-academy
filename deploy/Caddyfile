@@ -1,0 +1,11 @@
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Модели роботов и декодер Draco не меняются между выкладками одной версии:
+	# пусть браузер держит их у себя, первая загрузка урока — самая дорогая.
+	@static path /models/* /draco/* /_next/static/*
+	header @static Cache-Control "public, max-age=604800"
+
+	reverse_proxy app:3000
+	header Strict-Transport-Security "max-age=31536000"
+}

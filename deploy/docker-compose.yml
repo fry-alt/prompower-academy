@@ -1,0 +1,38 @@
+# Продакшен-стек PROMPOWER Academy. Лежит на сервере в /opt/prompower-academy
+# вместе с Caddyfile и .env; все три файла при каждом деплое заливает GitHub Actions.
+# Переменные (DOMAIN, IMAGE, IMAGE_TAG) берутся из .env рядом.
+
+# Имя проекта задано явно: от него зависят имена томов, а не от имени папки.
+name: prompower-academy
+
+services:
+  app:
+    image: ${IMAGE}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_APP_URL: https://${DOMAIN}
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # Обратный прокси с автоматическим HTTPS (Let's Encrypt).
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging: *logging
+
+volumes:
+  caddy-data:
+  caddy-config:

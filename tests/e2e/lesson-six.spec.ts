@@ -34,6 +34,7 @@ test('задание объявляет три цели', async ({ page }) => {
 });
 
 test('стартовая программа кладёт одну деталь и честно говорит про остальные', async ({ page }) => {
+  test.setTimeout(180_000);
   await page.getByTestId('speed').selectOption('4');
   await page.getByTestId('play').click();
 

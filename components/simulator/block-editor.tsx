@@ -121,15 +121,19 @@ export function BlockEditor({
 
     nameCategories(workspace);
 
-    const content = readDraft(draftKey) ?? initial;
-    if (content !== undefined) {
-      if (!tryLoad(workspace, content) && content !== initial && initial !== undefined) {
-        // Черновик от прошлой версии блоков не загрузился — лучше стартовая
-        // программа, чем пустой холст.
-        tryLoad(workspace, initial);
-      }
-      showFromCorner(workspace);
+    const draft = readDraft(draftKey);
+    let fromDraft = draft !== undefined && tryLoad(workspace, draft);
+    if (!fromDraft && initial !== undefined) {
+      // Черновика нет или он от прошлой версии блоков и не загрузился — тогда
+      // стартовая программа, а не пустой холст.
+      tryLoad(workspace, initial);
     }
+    showFromCorner(workspace);
+
+    // Холст, нетронутый со стартовой программы, черновиком не считается: иначе
+    // ученик, лишь открывший урок, навсегда остался бы со старой версией
+    // стартовой программы, даже когда автор курса её поправит.
+    const pristine = fromDraft ? null : snapshot(workspace);
 
     const publish = (): void => {
       // Выполняется одна цепочка. Брошенный на холст блок-значение (число,
@@ -160,7 +164,10 @@ export function BlockEditor({
       if (draftKey === undefined) return;
       window.clearTimeout(saving);
       saving = window.setTimeout(() => {
-        writeDraft(draftKey, Blockly.serialization.workspaces.save(workspace));
+        const current = snapshot(workspace);
+        if (!fromDraft && current === pristine) return;
+        fromDraft = true;
+        writeDraft(draftKey, current);
       }, DRAFT_DELAY_MS);
     };
 
@@ -220,9 +227,13 @@ function readDraft(key: string | undefined): object | undefined {
   }
 }
 
-function writeDraft(key: string, content: object): void {
+function snapshot(workspace: Blockly.WorkspaceSvg): string {
+  return JSON.stringify(Blockly.serialization.workspaces.save(workspace));
+}
+
+function writeDraft(key: string, content: string): void {
   try {
-    window.localStorage.setItem(key, JSON.stringify(content));
+    window.localStorage.setItem(key, content);
   } catch {
     // Нет места или запрещено — черновик просто не переживёт перезагрузку.
   }

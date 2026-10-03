@@ -1,0 +1,20 @@
+# Временная выкладка на чужой сервер (например, рядом с Yapp): только приложение,
+# без своего Caddy — порты 80/443 там уже заняты. Сайт открывается по
+# http://<ip>:8080. Включается переменной репозитория DEPLOY_MODE=shared.
+#
+# Это стенд для показа, а не прод: без HTTPS. Для прода — отдельный сервер и
+# обычный docker-compose.yml с Caddy.
+
+name: prompower-academy
+
+services:
+  app:
+    image: ${IMAGE}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:3000"
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

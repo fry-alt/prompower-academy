@@ -1,0 +1,22 @@
+# Проверка каждой ветки и пулреквеста: типы, unit-тесты, сборка.
+name: CI
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      # В .npmrc прописано зеркало для российских сетей; раннеру GitHub оно не нужно.
+      - run: npm ci --registry=https://registry.npmjs.org
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

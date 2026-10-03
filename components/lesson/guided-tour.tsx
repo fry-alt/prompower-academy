@@ -112,7 +112,7 @@ export function GuidedTour({
   if (step === undefined) return null;
 
   return (
-    <div data-testid="tour" className="pointer-events-none fixed inset-0 z-50">
+    <div data-testid="tour" className="pointer-events-none fixed inset-0 z-[80]">
       {box !== null && <Spotlight box={box} />}
 
       <div
