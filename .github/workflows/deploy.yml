@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       # В .npmrc прописано зеркало для российских сетей; раннеру GitHub оно не нужно.
       - run: npm ci --registry=https://registry.npmjs.org

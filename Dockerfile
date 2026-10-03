@@ -3,7 +3,7 @@
 # Next собирается в режиме standalone: в образ попадает только то, что нужно
 # серверу, без dev-зависимостей и без исходников.
 
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 # Воркспейсы и скрипт postinstall (кладёт декодер Draco в public/draco) нужны
 # уже на установке.
@@ -12,7 +12,7 @@ COPY packages ./packages
 COPY scripts ./scripts
 RUN npm ci --no-audit --no-fund
 
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_OUTPUT=standalone
@@ -21,7 +21,7 @@ COPY --from=deps /app/public/draco ./public/draco
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
