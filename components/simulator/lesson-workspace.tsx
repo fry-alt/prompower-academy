@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import type { PythonOptions } from '@prompower/blocks';
 import { useTranslations } from 'next-intl';
 import { LessonHeader } from '@/components/lesson/lesson-header';
 import { LessonNav, type LessonLink } from '@/components/lesson/lesson-nav';
@@ -8,7 +9,6 @@ import { LessonBrief, LessonShell } from '@/components/lesson/lesson-shell';
 import { TaskBrief } from '@/components/lesson/task-brief';
 import { TaskOnDesktop } from '@/components/lesson/task-on-desktop';
 import { TheoryView } from '@/components/lesson/theory-view';
-import { GuidedTour } from '@/components/lesson/guided-tour';
 import { useWideEnough } from '@/components/lesson/use-wide-enough';
 import type { Tour } from '@/lib/tour';
 import {
@@ -48,11 +48,7 @@ import { useUrdfChain } from './use-urdf-chain';
 import { taskBounds } from './task-bounds';
 
 /**
- * Экран задания: условие, программа и сцена.
- *
- * Три зоны из §9 брифа, но пока без редактора блоков: программа приходит готовой
- * и показана списком. Когда появится Blockly, он встанет на место списка — всё
- * остальное уже работает от него независимо.
+ * Экран задания: условие, программа и сцена — три зоны из §9 брифа.
  */
 const EMPTY: Program = { version: 1, body: [] };
 
@@ -162,7 +158,6 @@ function WideLesson({ plugin, task, tour, starter, title, theory, previous, next
       chain={chain.chain}
       fps={fps}
       onFps={setFps}
-      labels={{ t, tKey }}
     />
   );
 }
@@ -196,7 +191,6 @@ function Workspace({
   chain,
   fps,
   onFps,
-  labels,
 }: {
   plugin: RobotPlugin;
   task: Task;
@@ -210,15 +204,7 @@ function Workspace({
   chain: Chain;
   fps: number;
   onFps: (value: number) => void;
-  labels: { t: ReturnType<typeof useTranslations<'lesson'>>; tKey: ReturnType<typeof useTranslations> };
 }) {
-  const { t, tKey } = labels;
-  const tCourse = useTranslations('course');
-
-  // Теория — этап урока, а не колонка. §7 задаёт порядок «теория → задание»,
-  // и держать их одновременно значит не дать места ни тому, ни другому.
-  const [reading, setReading] = useState(true);
-
   // Программа приходит из редактора блоков и меняется по ходу сборки.
   const [program, setProgram] = useState<Program>(EMPTY);
   const [programError, setProgramError] = useState<string | null>(null);
@@ -304,10 +290,12 @@ function Workspace({
 
   const jointNames = useMemo(() => plugin.joints.map((joint) => joint.urdfName), [plugin]);
 
-  // Обучение идёт поверх обоих этапов урока: первый шаг указывает на кнопку
-  // «К заданию», а она живёт на теории.
-  const [touring, setTouring] = useState(tour !== null);
-  const closeTour = useCallback(() => setTouring(false), []);
+  // Скорость суставов в скрипте — из URDF модели, а не константа: самый
+  // медленный сустав задаёт потолок, который выдержат все.
+  const python = useMemo<PythonOptions>(() => {
+    const speeds = chain.joints.map((joint) => joint.maxSpeed).filter((value) => value > 0);
+    return speeds.length > 0 ? { maxJointSpeed: Math.min(...speeds) } : {};
+  }, [chain]);
 
   // Датчик светится по своему входу, а не по собственной проверке «есть ли
   // деталь перед ним»: второй такой расчёт разошёлся бы с миром молча.
@@ -340,7 +328,7 @@ function Workspace({
       fps={fps}
       controls={
         <RunControls
-          locked={teaching !== null}
+          locked={teaching !== null || programError !== null}
           status={runner.status}
           speed={runner.speed}
           onPlay={runner.play}
@@ -390,6 +378,8 @@ function Workspace({
               current={runner.run.current}
               error={programError}
               fileName={`${task.id}.py`}
+              draftKey={`prompower:draft:v1:${task.id}`}
+              python={python}
               onProgram={onProgram}
               onTeach={startTeaching}
             />

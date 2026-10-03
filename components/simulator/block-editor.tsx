@@ -42,6 +42,13 @@ function registerOnce(): void {
 /** Отступ программы от края холста, чтобы верхний блок не срезало. */
 const PROGRAM_MARGIN = 24;
 
+/** Пауза перед записью черновика: на каждое перетаскивание писать незачем. */
+const DRAFT_DELAY_MS = 400;
+
+const SEVERAL_STACKS =
+  'На холсте несколько отдельных цепочек блоков. Соедините их в одну программу ' +
+  'или уберите лишние: робот выполняет одну цепочку.';
+
 /**
  * Просьба показать роботу точку: что за блок, что в нём записано и куда вернуть
  * показанное.
@@ -58,11 +65,17 @@ export interface TeachRequest {
 
 export function BlockEditor({
   initial,
+  draftKey,
   onChange,
   onTeach,
 }: {
   /** Стартовое содержимое холста в формате сериализации Blockly. */
   initial?: object;
+  /**
+   * Ключ черновика в браузере. Есть — несохранённая программа переживает уход
+   * со страницы (это единственное, что CLAUDE.md разрешает держать локально).
+   */
+  draftKey?: string;
   onChange: (program: Program, error: string | null) => void;
   onTeach: (request: TeachRequest) => void;
 }) {
@@ -108,14 +121,32 @@ export function BlockEditor({
 
     nameCategories(workspace);
 
-    if (initial !== undefined) {
-      Blockly.serialization.workspaces.load(initial, workspace);
+    const content = readDraft(draftKey) ?? initial;
+    if (content !== undefined) {
+      if (!tryLoad(workspace, content) && content !== initial && initial !== undefined) {
+        // Черновик от прошлой версии блоков не загрузился — лучше стартовая
+        // программа, чем пустой холст.
+        tryLoad(workspace, initial);
+      }
       showFromCorner(workspace);
     }
 
     const publish = (): void => {
+      // Выполняется одна цепочка. Брошенный на холст блок-значение (число,
+      // переменная) программой не является и ничего не ломает, а вторая
+      // цепочка команд — ломает: раньше молча исполнялась та, что выше, и
+      // ученик правил программу, которая не запускалась.
+      const stacks = workspace
+        .getTopBlocks(true)
+        .filter((block) => block.outputConnection === null && block.isEnabled());
+
+      if (stacks.length > 1) {
+        latest.current({ version: 1, body: [] }, SEVERAL_STACKS);
+        return;
+      }
+
       try {
-        latest.current(toAst(workspace.getTopBlocks(true)[0] ?? null), null);
+        latest.current(toAst(stacks[0] ?? null), null);
       } catch (error) {
         latest.current(
           { version: 1, body: [] },
@@ -124,11 +155,21 @@ export function BlockEditor({
       }
     };
 
+    let saving = 0;
+    const saveDraft = (): void => {
+      if (draftKey === undefined) return;
+      window.clearTimeout(saving);
+      saving = window.setTimeout(() => {
+        writeDraft(draftKey, Blockly.serialization.workspaces.save(workspace));
+      }, DRAFT_DELAY_MS);
+    };
+
     publish();
     workspace.addChangeListener((event) => {
       // Перерисовки и выделение программу не меняют — на них не реагируем.
       if (event.isUiEvent) return;
       publish();
+      saveDraft();
     });
 
     // Blockly не следит за размером контейнера сам. Заодно решаем, помещаются ли
@@ -141,13 +182,59 @@ export function BlockEditor({
 
     return () => {
       disposed = true;
+      window.clearTimeout(saving);
       observer.disconnect();
       container.removeEventListener(TEACH_EVENT, onTeachEvent);
       workspace.dispose();
     };
-  }, [initial]);
+  }, [initial, draftKey]);
 
   return <div ref={host} className="h-full w-full" data-testid="block-editor" />;
+}
+
+function tryLoad(workspace: Blockly.WorkspaceSvg, content: object): boolean {
+  try {
+    Blockly.serialization.workspaces.load(content, workspace);
+    return true;
+  } catch {
+    workspace.clear();
+    return false;
+  }
+}
+
+/**
+ * Черновик программы из браузера.
+ *
+ * Хранилище может быть недоступно (приватный режим, запрет сайта) или хранить
+ * мусор — тогда черновика как будто нет, и открывается стартовая программа.
+ */
+function readDraft(key: string | undefined): object | undefined {
+  if (key === undefined) return undefined;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw === null) return undefined;
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeDraft(key: string, content: object): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(content));
+  } catch {
+    // Нет места или запрещено — черновик просто не переживёт перезагрузку.
+  }
+}
+
+/** Забыть черновик: следующий холст откроется со стартовой программой. */
+export function clearDraft(key: string): void {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // См. writeDraft.
+  }
 }
 
 /**

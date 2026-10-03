@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { toPython } from '@prompower/blocks';
+import { toPython, type PythonOptions } from '@prompower/blocks';
 import type { Program, Statement } from '@prompower/sim-core';
-import { BlockEditor, type TeachRequest } from './block-editor';
+import { BlockEditor, clearDraft, type TeachRequest } from './block-editor';
 import { ProgramList } from './program-list';
 
 /**
@@ -23,6 +23,8 @@ export function ProgramPanel({
   current,
   error,
   fileName,
+  draftKey,
+  python,
   onProgram,
   onTeach,
 }: {
@@ -33,14 +35,27 @@ export function ProgramPanel({
   error: string | null;
   /** Имя файла для скачивания: идентификатор задания, а не заголовок урока. */
   fileName: string;
+  /** Ключ черновика программы в браузере. */
+  draftKey: string;
+  /** Параметры скрипта, взятые из модели робота. */
+  python: PythonOptions;
   onProgram: (program: Program, error: string | null) => void;
   onTeach: (request: TeachRequest) => void;
 }) {
   const t = useTranslations('lesson');
   const [tab, setTab] = useState<Tab>('blocks');
+  // Номер холста: «Начать заново» пересоздаёт редактор со стартовой программой.
+  const [generation, setGeneration] = useState(0);
 
   // Скрипт считается один раз: показанное и скачанное обязаны совпадать.
-  const script = useMemo(() => toPython(program), [program]);
+  const script = useMemo(() => toPython(program, python), [program, python]);
+
+  const restart = (): void => {
+    if (!window.confirm(t('restartProgramConfirm'))) return;
+    clearDraft(draftKey);
+    setGeneration((value) => value + 1);
+    setTab('blocks');
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -63,6 +78,15 @@ export function ProgramPanel({
             {t(`tab.${value}`)}
           </button>
         ))}
+
+        <button
+          type="button"
+          data-testid="restart-program"
+          onClick={restart}
+          className="ml-auto rounded-panel border border-line px-2.5 py-1 text-xs text-ink-dim hover:text-ink"
+        >
+          {t('restartProgram')}
+        </button>
       </div>
 
       {error !== null && (
@@ -73,7 +97,13 @@ export function ProgramPanel({
 
       {/* Редактор держим смонтированным: Blockly теряет холст при размонтировании. */}
       <div className={tab === 'blocks' ? 'min-h-0 flex-1' : 'hidden'}>
-        <BlockEditor initial={starter} onChange={onProgram} onTeach={onTeach} />
+        <BlockEditor
+          key={generation}
+          initial={starter}
+          draftKey={draftKey}
+          onChange={onProgram}
+          onTeach={onTeach}
+        />
       </div>
 
       {tab === 'list' && (
@@ -112,8 +142,9 @@ export function ProgramPanel({
 /**
  * Отдать скрипт файлом.
  *
- * Ссылка отзывается сразу после нажатия: иначе Blob висит в памяти вкладки до
- * перезагрузки страницы, а уроков за сессию проходят несколько.
+ * Ссылка отзывается вскоре после нажатия, а не сразу: Firefox и Safari начинают
+ * скачивание асинхронно, и немедленный отзыв обрывал его. Но и не висит до
+ * перезагрузки — уроков за сессию проходят несколько.
  */
 function download(fileName: string, script: string): void {
   const url = URL.createObjectURL(new Blob([script], { type: 'text/x-python;charset=utf-8' }));
@@ -121,7 +152,10 @@ function download(fileName: string, script: string): void {
 
   link.href = url;
   link.download = fileName;
+  link.style.display = 'none';
+  document.body.append(link);
   link.click();
+  link.remove();
 
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { compileMDX } from 'next-mdx-remote/rsc';
 import { parseTask, type Task } from '@prompower/sim-core';
-import type { ReactElement } from 'react';
+import { cache, type ReactElement } from 'react';
 import { FALLBACK_LOCALE, lessonFileFor, orderOf, slugOf, tourFileFor } from './content-paths';
 import { parseTour, type Tour } from './tour';
 
@@ -22,6 +22,11 @@ const COURSES = join(process.cwd(), 'content', 'courses');
 export interface LessonMeta {
   /** Адрес урока: имя папки без числового префикса. */
   readonly slug: string;
+  /**
+   * Имя папки как есть. Восстанавливать его из номера и адреса нельзя: папка
+   * «1-…» или «100-…» после такого восстановления не находилась.
+   */
+  readonly folder: string;
   readonly order: number;
   readonly title: string;
   readonly description: string;
@@ -55,12 +60,17 @@ export interface Lesson {
   readonly next: LessonMeta | null;
 }
 
-/** Все курсы с уроками по порядку. */
-export async function loadCourses(locale: string): Promise<Course[]> {
+/**
+ * Все курсы с уроками по порядку.
+ *
+ * Кэш на запрос: метаданные, урок и заголовок страницы спрашивают каталог
+ * каждый по-своему, и без кэша фронтматтер всех уроков компилировался трижды.
+ */
+export const loadCourses = cache(async (locale: string): Promise<Course[]> => {
   const slugs = await subdirectories(COURSES);
 
   return Promise.all(slugs.map((slug) => loadCourse(slug, locale)));
-}
+});
 
 async function loadCourse(slug: string, locale: string): Promise<Course> {
   const root = join(COURSES, slug);
@@ -83,7 +93,7 @@ async function loadCourse(slug: string, locale: string): Promise<Course> {
 }
 
 /** Урок по адресу. Ищется во всех курсах: адрес урока не включает курс. */
-export async function loadLesson(slug: string, locale: string): Promise<Lesson | null> {
+export const loadLesson = cache(async (slug: string, locale: string): Promise<Lesson | null> => {
   const courses = await loadCourses(locale);
 
   for (const course of courses) {
@@ -93,8 +103,7 @@ export async function loadLesson(slug: string, locale: string): Promise<Lesson |
     const meta = course.lessons[index];
     if (meta === undefined) continue;
 
-    const folder = folderOf(meta);
-    const root = join(COURSES, course.slug, 'lessons', folder);
+    const root = join(COURSES, course.slug, 'lessons', meta.folder);
     const files = await readdir(root);
     const file = lessonFileFor(files, locale);
     if (file === null) return null;
@@ -118,18 +127,12 @@ export async function loadLesson(slug: string, locale: string): Promise<Lesson |
   }
 
   return null;
-}
+});
 
 /** Адреса всех уроков: для статической сборки страниц. */
 export async function allLessonSlugs(): Promise<string[]> {
   const courses = await loadCourses(FALLBACK_LOCALE);
   return courses.flatMap((course) => course.lessons.map((lesson) => lesson.slug));
-}
-
-/** Имя папки урока обратно из метаданных. */
-function folderOf(meta: LessonMeta): string {
-  if (meta.order === Number.MAX_SAFE_INTEGER) return meta.slug;
-  return `${String(meta.order).padStart(2, '0')}-${meta.slug}`;
 }
 
 async function readMeta(root: string, folder: string, locale: string): Promise<LessonMeta> {
@@ -155,8 +158,13 @@ async function readMeta(root: string, folder: string, locale: string): Promise<L
     throw new Error(`У урока ${folder} во фронтматтере нет title или minutes`);
   }
 
+  if (typeof frontmatter.description !== 'string') {
+    throw new Error(`У урока ${folder} во фронтматтере нет description`);
+  }
+
   return {
     slug: slugOf(folder),
+    folder,
     order: orderOf(folder),
     title: frontmatter.title,
     description: frontmatter.description,

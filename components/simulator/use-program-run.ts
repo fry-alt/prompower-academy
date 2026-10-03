@@ -34,8 +34,8 @@ export interface ProgramRun {
   readonly run: RunState;
   /**
    * Объекты сцены для отрисовки. Отличаются от `run.world.objects` во время
-   * движения: зажатая деталь пересчитывается по анимированным углам, иначе она
-   * стоит на месте весь путь и телепортируется в конце.
+   * шага: зажатая деталь пересчитывается по анимированным углам, а деталь на
+   * ленте едет плавно — иначе обе стояли бы на месте и телепортировались.
    */
   readonly objects: Readonly<Record<string, SceneObject>>;
   /** Углы для сцены: между шагами они идут по промежуточным позам. */
@@ -57,6 +57,16 @@ interface Animation {
   readonly waypoints: readonly (readonly number[])[];
   readonly startedAt: number;
   readonly durationMs: number;
+  /** Детали в начале и в конце шага: лента везёт их плавно, а не скачком. */
+  readonly from: Readonly<Record<string, SceneObject>>;
+  readonly to: Readonly<Record<string, SceneObject>>;
+}
+
+/** Что показывает сцена прямо сейчас: посреди шага — промежуточный кадр. */
+interface Frame {
+  readonly joints: readonly number[];
+  /** Детали посреди шага. `null` — сцена показывает состояние мира как есть. */
+  readonly objects: Readonly<Record<string, SceneObject>> | null;
 }
 
 export function useProgramRun(
@@ -67,20 +77,24 @@ export function useProgramRun(
 ): ProgramRun {
   const planner = useMemo(() => createPlanner(chain), [chain]);
 
+  // Стартовая поза задания важнее домашней позы модели: автор урока ставит
+  // робота туда, откуда задание задумано. Ручной урок это уже соблюдал.
+  const startPose = useMemo(() => [...(task.world.joints ?? homePose)], [task, homePose]);
+
   const startWorld = useCallback(
     () =>
       createWorld({
-        joints: [...homePose],
+        joints: [...startPose],
         objects: [...task.world.objects],
         zones: [...task.world.zones],
         conveyors: [...task.world.conveyors],
         sensors: [...task.world.sensors],
       }),
-    [homePose, task],
+    [startPose, task],
   );
 
   const [run, setRun] = useState<RunState>(() => createRun(program, startWorld()));
-  const [joints, setJoints] = useState<readonly number[]>(() => [...homePose]);
+  const [frame, setFrame] = useState<Frame>(() => ({ joints: [...startPose], objects: null }));
   const [status, setStatus] = useState<RunStatus>('idle');
   const [speed, setSpeed] = useState(1);
 
@@ -96,9 +110,9 @@ export function useProgramRun(
     const fresh = createRun(program, startWorld());
     runRef.current = fresh;
     setRun(fresh);
-    setJoints([...homePose]);
+    setFrame({ joints: [...startPose], objects: null });
     setStatus('idle');
-  }, [program, startWorld, homePose]);
+  }, [program, startWorld, startPose]);
 
   /**
    * Правка программы начинает прогон заново.
@@ -111,7 +125,7 @@ export function useProgramRun(
     restart();
   }, [restart]);
 
-  /** Один шаг интерпретатора плюс запуск анимации его движения. */
+  /** Один шаг интерпретатора плюс запуск анимации его движения или паузы. */
   const advance = useCallback((): RunState => {
     const before = runRef.current;
     if (before.status !== 'running') return before;
@@ -120,16 +134,25 @@ export function useProgramRun(
     runRef.current = after;
     setRun(after);
 
-    const waypoints = after.lastMotion;
-    if (waypoints !== null && waypoints.length > 0) {
-      const ticks = Math.max(1, after.world.tick - before.world.tick);
+    const ticks = after.world.tick - before.world.tick;
+    // Новое движение узнаётся по новому массиву, а не по его наличию: прошлое
+    // движение остаётся в состоянии и после себя, и раньше каждый «закрыть
+    // захват» проигрывал предыдущий путь заново — рука дёргалась назад.
+    const motion = after.lastMotion !== before.lastMotion ? after.lastMotion : null;
+
+    // Пауза тоже должна длиться: «ждать 2 с» раньше проскакивала мгновенно, а
+    // деталь на ленте телепортировалась. Одиночный тик ожидания сигнала идёт
+    // без задержки — его темп и так задаёт кадр.
+    if (motion !== null || ticks > 1) {
       animation.current = {
-        waypoints,
+        waypoints: motion ?? [after.world.joints],
         startedAt: performance.now(),
-        durationMs: (ticks * TICK_MS) / Math.max(speedRef.current, 0.01),
+        durationMs: (Math.max(1, ticks) * TICK_MS) / Math.max(speedRef.current, 0.01),
+        from: before.world.objects,
+        to: after.world.objects,
       };
     } else {
-      setJoints([...after.world.joints]);
+      setFrame({ joints: [...after.world.joints], objects: null });
     }
 
     return after;
@@ -139,14 +162,21 @@ export function useProgramRun(
   useEffect(() => {
     if (status !== 'playing' && animation.current === null) return;
 
-    let frame = 0;
+    let handle = 0;
     const tick = (): void => {
       const current = animation.current;
 
       if (current !== null) {
         const progress = Math.min(1, (performance.now() - current.startedAt) / current.durationMs);
-        setJoints(poseAt(current.waypoints, progress));
-        if (progress >= 1) animation.current = null;
+        if (progress >= 1) {
+          animation.current = null;
+          setFrame({ joints: poseAt(current.waypoints, 1), objects: null });
+        } else {
+          setFrame({
+            joints: poseAt(current.waypoints, progress),
+            objects: objectsAt(current.from, current.to, progress),
+          });
+        }
       } else if (status === 'playing') {
         // Инструкции без движения идут по одной за кадр, и ползунок скорости их
         // не касался: ожидание сигнала с конвейера промотать было нечем. Шаги
@@ -158,7 +188,10 @@ export function useProgramRun(
           const after = advance();
           if (after.status !== 'running') {
             setStatus('done');
-            return;
+            // Последнее движение ещё надо доиграть — кадры идут, пока оно не
+            // кончится, иначе робот застыл бы на полпути.
+            if (animation.current === null) return;
+            break;
           }
           if (animation.current !== null) break;
         }
@@ -166,22 +199,26 @@ export function useProgramRun(
         return;
       }
 
-      frame = requestAnimationFrame(tick);
+      handle = requestAnimationFrame(tick);
     };
 
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    handle = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(handle);
   }, [status, advance]);
 
   const objects = useMemo(() => {
-    const { grasped, graspOffset, objects: source } = run.world;
+    const source = frame.objects ?? run.world.objects;
+    const { grasped, graspOffset } = run.world;
     if (grasped === null || graspOffset === null) return source;
 
     const held = source[grasped];
-    if (held === undefined || joints.length === 0) return source;
+    if (held === undefined || frame.joints.length === 0) return source;
 
-    return { ...source, [grasped]: { ...held, position: planner.flangePoint(joints, graspOffset) } };
-  }, [run.world, joints, planner]);
+    return {
+      ...source,
+      [grasped]: { ...held, position: planner.flangePoint(frame.joints, graspOffset) },
+    };
+  }, [run.world, frame, planner]);
 
   const check = useMemo(
     () => (run.status === 'running' ? null : checkTask(task, program, run.world, run.log, chain)),
@@ -210,7 +247,7 @@ export function useProgramRun(
   return {
     run,
     objects,
-    joints,
+    joints: frame.joints,
     status,
     speed,
     check,
@@ -247,4 +284,33 @@ function poseAt(
   const fraction = exact - index;
 
   return from.map((value, joint) => value + ((to[joint] ?? value) - value) * fraction);
+}
+
+/**
+ * Детали на доле `progress` шага. Зажатую деталь здесь не трогаем: она едет с
+ * рукой, и её место считается по углам кадра.
+ */
+function objectsAt(
+  from: Readonly<Record<string, SceneObject>>,
+  to: Readonly<Record<string, SceneObject>>,
+  progress: number,
+): Readonly<Record<string, SceneObject>> {
+  if (from === to) return to;
+
+  const result: Record<string, SceneObject> = {};
+  for (const [id, end] of Object.entries(to)) {
+    const start = from[id];
+    result[id] =
+      start === undefined || start === end
+        ? end
+        : {
+            ...end,
+            position: {
+              x: start.position.x + (end.position.x - start.position.x) * progress,
+              y: start.position.y + (end.position.y - start.position.y) * progress,
+              z: start.position.z + (end.position.z - start.position.z) * progress,
+            },
+          };
+  }
+  return result;
 }

@@ -162,6 +162,8 @@
       "blocks": "Blocks",
       "list": "List",
       "code": "Code"
-    }
+    },
+    "restartProgram": "Start over",
+    "restartProgramConfirm": "Restore the starter program? Your blocks will be removed."
   }
 }

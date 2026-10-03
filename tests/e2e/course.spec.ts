@@ -16,7 +16,8 @@ test('курс начинается с урока о коботе', async ({ pag
   const titles = await page.getByTestId('lesson-title').allInnerTexts();
   expect(titles[0]).toBe('Знакомство с коботом');
   expect(titles[1]).toBe('Безопасность');
-  expect(titles).toHaveLength(5);
+  expect(titles).toHaveLength(6);
+  expect(titles.at(-1)).toBe('Полный цикл');
 });
 
 test('из карты курса открывается урок', async ({ page }) => {
@@ -37,7 +38,7 @@ test('на экране урока видна теория', async ({ page }) =>
 });
 
 test('последний урок честно говорит, что он последний', async ({ page }) => {
-  await page.goto('/ru/lesson/vhody-i-vyhody');
+  await page.goto('/ru/lesson/polnyj-cikl');
 
   await expect(page.getByTestId('lesson-nav')).toBeVisible();
   await expect(page.getByText('Это последний урок курса')).toBeVisible();
@@ -69,11 +70,16 @@ test('к теории можно вернуться, не потеряв про�
   await page.getByTestId('theory-start').click();
   await expect(page.getByTestId('block-editor')).toBeVisible({ timeout: 30_000 });
 
+  // Метка на узле редактора: если он пересоздастся, метка пропадёт вместе с
+  // программой. Раньше так и было — возврат к теории стирал собранные блоки.
+  await page.getByTestId('block-editor').evaluate((node) => node.setAttribute('data-mark', 'kept'));
+
   await page.getByTestId('back-to-theory').click();
   await expect(page.getByTestId('theory-start')).toBeVisible();
 
   await page.getByTestId('theory-start').click();
   await expect(page.getByTestId('block-editor')).toBeVisible();
+  await expect(page.getByTestId('block-editor')).toHaveAttribute('data-mark', 'kept');
 });
 
 test('разделитель меняет ширину зон', async ({ page }) => {

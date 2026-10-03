@@ -65,6 +65,10 @@ export function LessonShell({
   // Теория — этап урока, а не колонка. §7 задаёт порядок «теория → задание»,
   // и держать их одновременно значит не дать места ни тому, ни другому.
   const [reading, setReading] = useState(true);
+  // Задание, раз открытое, остаётся смонтированным и при возврате к теории:
+  // раньше вместе с ним размонтировался редактор, и собранная программа
+  // пропадала, а сцена грузилась заново.
+  const [started, setStarted] = useState(false);
 
   // Обучение идёт поверх обоих этапов урока: первый шаг указывает на кнопку
   // «К заданию», а она живёт на теории.
@@ -107,39 +111,50 @@ export function LessonShell({
         </p>
       )}
 
-      {reading ? (
+      {reading && (
         <>
-          <TheoryView onStart={() => setReading(false)}>{theory}</TheoryView>
+          <TheoryView
+            onStart={() => {
+              setStarted(true);
+              setReading(false);
+            }}
+          >
+            {theory}
+          </TheoryView>
           <div className="border-t border-line px-5 py-3">
             <LessonNav previous={previous} next={next} />
           </div>
         </>
-      ) : (
-        <SplitPane
-          label={tCourse('splitLabel')}
-          initial={0.52}
-          left={<div className="flex min-h-0 flex-1 flex-col">{left}</div>}
-          right={
-            <main className="relative min-h-0 flex-1">
-              {viewer}
+      )}
 
-              {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. Делается
-                  наложением поверх холста, а не в сцене — шейдер ради неё писать
-                  незачем, а пакет постобработки мы не подключаем. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
-              />
-
-              <p
-                data-testid="scene-stats"
-                className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"
-              >
-                <span data-testid="load-ms">{loadMs}</span> ms · {fps} fps
-              </p>
-            </main>
-          }
-        />
+      {started && (
+        <div className={reading ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}>
+          <SplitPane
+            label={tCourse('splitLabel')}
+            initial={0.52}
+            left={<div className="flex min-h-0 flex-1 flex-col">{left}</div>}
+            right={
+              <main className="relative min-h-0 flex-1">
+                {viewer}
+  
+                {/* Виньетка: сцена перестаёт выглядеть вырезанной в пустоте. Делается
+                    наложением поверх холста, а не в сцене — шейдер ради неё писать
+                    незачем, а пакет постобработки мы не подключаем. */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_45%,rgba(0,0,0,0.5)_100%)]"
+                />
+  
+                <p
+                  data-testid="scene-stats"
+                  className="pointer-events-none absolute bottom-3 right-4 font-mono text-xs text-ink-faint"
+                >
+                  <span data-testid="load-ms">{loadMs}</span> ms · {fps} fps
+                </p>
+              </main>
+            }
+          />
+        </div>
       )}
 
       {tour !== null && touring && (

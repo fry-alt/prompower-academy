@@ -35,6 +35,10 @@ export function useUrdfRobot(plugin: RobotPlugin): UrdfLoadState {
   const [state, setState] = useState<UrdfLoadState>({ status: 'loading' });
 
   useEffect(() => {
+    // Смена модели без размонтирования: прежний робот уже отдан на утилизацию
+    // в очистке эффекта, и показывать его до загрузки нового нельзя.
+    setState({ status: 'loading' });
+
     let cancelled = false;
     let ready: URDFRobot | null = null;
     let parsed: URDFRobot | null = null;
