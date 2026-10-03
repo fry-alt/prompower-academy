@@ -48,8 +48,15 @@ const DEFAULT_ACC = 0.5;
 /** Скорость по умолчанию, пока в программе не встретился блок «скорость». */
 const DEFAULT_SPEED = 0.5;
 
+/**
+ * Скорость, доля от паспортной. Меняется блоком «скорость».
+ *
+ * Действует до конца своей цепочки блоков, но не выходит из цикла или ветки, в
+ * которой стоит. Перевод статический, а ветка исполняется не всегда: скорость,
+ * заданная внутри «если», иначе применилась бы ко всем движениям после него —
+ * и тогда, когда ветка не сработала.
+ */
 interface Context {
-  /** Текущая скорость, доля от паспортной. Меняется блоком «скорость». */
   speed: number;
 }
 
@@ -125,14 +132,14 @@ function translate(block: BlockLike, context: Context): Statement | null {
       return {
         op: 'repeat',
         times: Math.max(0, Math.round(number(block, 'TIMES'))),
-        body: sequence(block.getInputTargetBlock('BODY'), context),
+        body: sequence(block.getInputTargetBlock('BODY'), { ...context }),
       };
 
     case BLOCK_TYPES.branch:
       return {
         op: 'if',
         cond: condition(block.getInputTargetBlock('COND')),
-        then: sequence(block.getInputTargetBlock('THEN'), context),
+        then: sequence(block.getInputTargetBlock('THEN'), { ...context }),
       };
 
     case BLOCK_TYPES.setVar:

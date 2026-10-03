@@ -1,3 +1,7 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Program, Value } from '@prompower/sim-core';
 import { toPython } from './to-python';
@@ -84,7 +88,7 @@ describe('ввод-вывод и захват', () => {
 
   it('ожидание входа крутит опрос до нужного состояния', () => {
     const code = toPython(program({ op: 'waitDI', bank: 'cabinet', index: 1, value: true }));
-    expect(code).toContain('while robot.get_digital_input(IO_CABINET, 1)[1] != 1:');
+    expect(code).toContain('while _input(IO_CABINET, 1) != 1:');
     expect(code).toContain('time.sleep(0.01)');
   });
 });
@@ -95,7 +99,7 @@ describe('управляющие конструкции', () => {
       program({ op: 'repeat', times: 3, body: [{ op: 'gripper', action: 'open' }] }),
     );
     expect(code).toContain('    for _ in range(3):');
-    expect(code).toContain('        robot.set_digital_output(IO_TOOL, 1, 0)');
+    expect(code).toContain('        _check(robot.set_digital_output(IO_TOOL, 1, 0)');
   });
 
   it('пустое тело цикла получает pass', () => {
@@ -112,7 +116,7 @@ describe('управляющие конструкции', () => {
       }),
     );
 
-    expect(code).toContain('if robot.get_digital_input(IO_CABINET, 1)[1] == 1:');
+    expect(code).toContain('if _input(IO_CABINET, 1) == 1:');
     expect(code).toContain('    else:');
   });
 
@@ -219,3 +223,175 @@ describe('вычисляемые координаты', () => {
     expect(code).toMatch(/\(y\) \* 1000/);
   });
 });
+
+describe('скрипт исполним без правок', () => {
+  it('объявляет константы SDK сам: в модуле jkrc их нет', () => {
+    const code = toPython(program({ op: 'moveJ', joints: [0, 0, 0, 0, 0, 0], ...MOVE }));
+
+    expect(code).toMatch(/^ABS = 0$/m);
+    expect(code).toMatch(/^IO_CABINET = 0$/m);
+    expect(code).toMatch(/^IO_TOOL = 1$/m);
+    expect(code).toContain('ABS, True,');
+  });
+
+  it('проверяет код возврата каждого вызова SDK', () => {
+    const code = toPython(program({ op: 'gripper', action: 'close' }));
+    expect(code).toContain('_check(robot.login(), "вход в контроллер")');
+    expect(code).toContain('_check(robot.set_digital_output(IO_TOOL, 1, 1), "захват")');
+  });
+
+  it('таймаут ожидания входа исполняется, а не висит комментарием', () => {
+    const code = toPython(
+      program({ op: 'waitDI', bank: 'cabinet', index: 2, value: true, timeoutMs: 1500 }),
+    );
+
+    expect(code).toContain('_deadline = time.monotonic() + 1.5');
+    expect(code).toContain('raise TimeoutError(');
+  });
+
+  it('переменные заводятся нулём до программы, как в симуляторе', () => {
+    const code = toPython(
+      program({
+        op: 'if',
+        cond: {
+          kind: 'compare',
+          operator: '<',
+          left: { kind: 'variable', name: 'n' },
+          right: { kind: 'number', value: 3 },
+        },
+        then: [],
+      }),
+    );
+
+    expect(code).toMatch(/^ {4}n = 0$/m);
+  });
+
+  it('имя переменной не затирает робота и слова языка', () => {
+    const code = toPython(
+      program(
+        { op: 'setVar', name: 'robot', value: { kind: 'number', value: 1 } },
+        { op: 'setVar', name: 'for', value: { kind: 'number', value: 2 } },
+      ),
+    );
+
+    expect(code).toContain('robot_var = 1');
+    expect(code).toContain('for_var = 2');
+  });
+
+  it('разные имена не сливаются после транслитерации', () => {
+    const code = toPython(
+      program(
+        { op: 'setVar', name: 'Ряд', value: { kind: 'number', value: 1 } },
+        { op: 'setVar', name: 'ряд', value: { kind: 'number', value: 2 } },
+      ),
+    );
+
+    expect(code).toContain('ryad = 1');
+    expect(code).toContain('ryad_2 = 2');
+  });
+
+  it('перенос строки в комментарии не превращается в код', () => {
+    const code = toPython(program({ op: 'comment', text: 'раз\nrobot.power_off()' }));
+    expect(code).toContain('# раз robot.power_off()');
+    expect(code).not.toMatch(/^\s*robot\.power_off\(\)/m);
+  });
+
+  it('деление идёт через помощника: на ноль даёт ноль, как в симуляторе', () => {
+    const code = toPython(
+      program({
+        op: 'setVar',
+        name: 'k',
+        value: {
+          kind: 'binary',
+          operator: '/',
+          left: { kind: 'number', value: 1 },
+          right: { kind: 'variable', name: 'n' },
+        },
+      }),
+    );
+
+    expect(code).toContain('def _div(a, b):');
+    expect(code).toContain('k = _div(1, n)');
+  });
+
+  // Сильнейшая проверка: настоящий интерпретатор Python исполняет скрипт против
+  // подставного модуля jkrc. Без Python на машине тест пропускается.
+  it.skipIf(!hasPython())('исполняется интерпретатором Python против подставного SDK', () => {
+    const code = toPython(
+      program(
+        { op: 'setVar', name: 'i', value: { kind: 'number', value: 0 } },
+        {
+          op: 'repeat',
+          times: 2,
+          body: [
+            { op: 'waitDI', bank: 'cabinet', index: 1, value: true, timeoutMs: 1000 },
+            { op: 'moveJ', joints: [0, 0.5, 0, 0, 0, 0], ...MOVE },
+            {
+              op: 'moveL',
+              pose: {
+                x: 0.4,
+                y: {
+                  kind: 'binary',
+                  operator: '/',
+                  left: { kind: 'variable', name: 'i' },
+                  right: { kind: 'number', value: 1000 },
+                },
+                z: 0.2,
+                rx: Math.PI,
+                ry: 0,
+                rz: 0,
+              },
+              ...MOVE,
+            },
+            { op: 'gripper', action: 'close' },
+            { op: 'wait', ms: 10 },
+            {
+              op: 'setVar',
+              name: 'i',
+              value: {
+                kind: 'binary',
+                operator: '+',
+                left: { kind: 'variable', name: 'i' },
+                right: { kind: 'number', value: 100 },
+              },
+            },
+          ],
+        },
+      ),
+    );
+
+    const result = runPython(code);
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('joint_move');
+    expect(result.stdout).toContain('linear_move [400.0, 100, 200.0');
+  });
+});
+
+const FAKE_JKRC = `
+class RC:
+    def __init__(self, host):
+        pass
+    def __getattr__(self, name):
+        def call(*args):
+            print(name, *args)
+            return (0, 1) if name == "get_digital_input" else (0,)
+        return call
+`;
+
+function hasPython(): boolean {
+  return spawnSync('python', ['--version']).status === 0;
+}
+
+function runPython(code: string): { status: number | null; stdout: string; stderr: string } {
+  const dir = mkdtempSync(join(tmpdir(), 'jkrc-'));
+  writeFileSync(join(dir, 'jkrc.py'), FAKE_JKRC);
+  writeFileSync(join(dir, 'program.py'), code);
+
+  const result = spawnSync('python', ['program.py'], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+  });
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}

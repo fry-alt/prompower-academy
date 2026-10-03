@@ -62,6 +62,22 @@ describe('движения', () => {
 });
 
 describe('скорость', () => {
+  it('скорость из ветки не утекает в движения после неё', () => {
+    const after = block(BLOCK_TYPES.moveJoint, { J1: 0, J2: 0, J3: 0, J4: 0, J5: 0, J6: 0 });
+    const branch = block(
+      BLOCK_TYPES.branch,
+      {},
+      { THEN: block(BLOCK_TYPES.setSpeed, { PERCENT: 10 }) },
+      after,
+    );
+
+    const program = toAst(branch);
+    const move = program.body[1]!;
+    expect(move.op).toBe('moveJ');
+    if (move.op !== 'moveJ') return;
+    expect(move.speed).toBeCloseTo(0.5, 9);
+  });
+
   it('блок скорости сам инструкцией не становится', () => {
     const program = toAst(block(BLOCK_TYPES.setSpeed, { PERCENT: 30 }));
     expect(program.body).toEqual([]);
